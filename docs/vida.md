@@ -1,7 +1,24 @@
 # Subgrupo Vida
 
-> **Fuente de verdad:** [Especificación](../docs/especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
-> **Fecha:** 2026-10-17 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [App](app.md) 
+> **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
+> **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [App](app.md) 
+
+## Estado actual del repositorio (2026-10-18)
+
+El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+
+| Elemento | Estado |
+| --- | --- |
+| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
+| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
+| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla (tarea A-11) |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
+| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
+| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+
+**Todo lo demás que este documento nombra** (contratos en código, `FakeEngine`, `InMemoryStorage`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+
+**Falta para Vida:** `hypothesis` (pruebas de propiedades) y `pytest-cov` (cobertura, RNF-10) no están en `requirements.txt`. Ver A-11 en `app.md`.
 
 ## 1. Propósito y alcance
 
@@ -22,7 +39,7 @@ Fases que le tocan: **F2 Criaturas** (casi todo) y la parte de criaturas de **F3
 **Responsabilidades**
 
 1. El **estado de la población** (identificador, especie, posición, genes, saciedad, hidratación, espera de reproducción, edad, estado del autómata, tick de nacimiento) y su orden estable por `id`.
-2. El **autómata** con las seis prioridades de la [sección 5](../spec/especificacion.md#criaturas-autómata-de-estados-finitos) y los nueve estados.
+2. El **autómata** con las seis prioridades de la [sección 5](especificacion.md#criaturas-autómata-de-estados-finitos) y los nueve estados.
 3. **Movimiento y ocupación**: orden de acción por fuerza descendente y, en empate, por `id`; una criatura por casilla; el agua es intransitable.
 4. **Depredación** (tamaño ≥ 1.2 veces, distinta especie, con hambre, +8 de saciedad por unidad de tamaño) y **muerte** por hambre, sed, fuego o ser comida.
 5. **Reproducción y mutación**: promedio de los padres × (1 + u), con u uniforme en ±0.10, entre el piso y el límite técnico del gen; espera inicial de 200 ticks para las crías.
@@ -42,7 +59,7 @@ Fases que le tocan: **F2 Criaturas** (casi todo) y la parte de criaturas de **F3
 
 ## 3. Requisitos funcionales asignados
 
-R = responsable principal. Los criterios están resumidos: el texto completo, con Dado/Cuando/Entonces, está en la [sección 4](../spec/especificacion.md#4-requisitos-funcionales) de la especificación.
+R = responsable principal. Los criterios están resumidos: el texto completo, con Dado/Cuando/Entonces, está en la [sección 4](especificacion.md#4-requisitos-funcionales) de la especificación.
 
 **3.1 Como responsable principal**
 
@@ -77,35 +94,37 @@ R = responsable principal. Los criterios están resumidos: el texto completo, co
 
 ## 4. Requisitos no funcionales aplicables
 
-Los criterios completos están en la [sección 6](../spec/especificacion.md#6-requisitos-no-funcionales).
+Los criterios completos están en la [sección 6](especificacion.md#6-requisitos-no-funcionales).
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.12 en Windows, macOS y Ubuntu; instalación con un comando | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
 | RNF-02 | Rendimiento: ≥ 60 ticks/s sin criaturas y ≥ 30 con 1000 | Colaborador | E mide y optimiza el tick y el mapa; V mantiene el presupuesto de los pasos 6 a 10 con el cupo lleno |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Colaborador | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
 | RNF-06 | Configuración única validada al arrancar | Colaborador | A es dueño del cargador, la validación y la prueba de igualdad con el archivo; E y V son dueños de sus secciones |
 | RNF-09 | Tamaño del guardado < 20 MB con 1000 criaturas y 5000 muestras por especie | Colaborador | A mide el archivo; V mantiene acotado el historial (D-33) |
 | RNF-10 | Pruebas: cobertura ≥ 80 % del motor y pruebas de propiedades | Colaborador | E es dueño de la cobertura y de las propiedades del mundo (agua fija); V de las propiedades de criaturas (cupo, genes, casilla única, sin canibalismo); A integra todo en la CI |
 | RNF-11 | Idioma (español) y accesibilidad (contraste 4.5:1; distancias de la paleta) | Colaborador | A revisa textos y contrastes; V garantiza que la asignación de colores respete la paleta (RF-55) |
-| RNF-12 | Errores: registro local y mensaje sin perder el último guardado | Colaborador | A captura, registra y muestra; E y V levantan errores propios del contrato (`ErrorEcosim`) |
+| RNF-12 | Errores: registro local y mensaje sin perder el último guardado | Colaborador | A captura, registra y muestra; E y V levantan errores propios del contrato (`ErrorSimulador`) |
 
 Además aplica a todos los RF del subgrupo: **RNF-05** (sorteos en orden estable, sin iterar sobre conjuntos) y **RNF-06** (cero valores escritos a mano).
 
 ## 5. Interfaces y contratos con otros subgrupos
 
+> **RFC** en este repositorio significa un pull request hacia `develop` que modifica `docs/contratos.md`, aprobado por los tres líderes. `docs/contratos.md` hoy solo tiene la plantilla y las seis secciones por pareja de subgrupos, vacías; ningún contrato está implementado en código.
+
 | Contrato | Con quién | Qué entrega Vida | Qué recibe | Estado |
 | --- | --- | --- | --- | --- |
-| Comandos (`contracts/commands.py`) | App, Ecosistema | Atiende `CrearEspecie`, `AgregarCriaturas`, `EliminarCriaturas`, `ExtinguirEspecie`, `EliminarEspecie`; valida y deja efecto al inicio del tick siguiente | De App, a través de `Engine.apply` | Existe |
-| `Snapshot` (`contracts/snapshot.py`) | App | `criaturas` (x, y, especie), `especies` (id, nombre, color, población, extinguida), `cupo` | — | Existe |
-| Avisos del motor (`contracts/events.py`) | App | `CupoAlcanzado`, `EspecieExtinguida` | — | Existe |
+| Comandos (`contratos/commands.py`) | App, Ecosistema | Atiende `CrearEspecie`, `AgregarCriaturas`, `EliminarCriaturas`, `ExtinguirEspecie`, `EliminarEspecie`; valida y deja efecto al inicio del tick siguiente | De App, a través de `Engine.apply` | Por crear |
+| `Snapshot` (`contratos/snapshot.py`) | App | `criaturas` (x, y, especie), `especies` (id, nombre, color, población, extinguida), `cupo` | — | Por crear |
+| Avisos del motor (`contratos/events.py`) | App | `CupoAlcanzado`, `EspecieExtinguida` | — | Por crear |
 | Ranura de los pasos 6 a 10 | Ecosistema | Funciones `paso_06` a `paso_10` y el cálculo de la muestra del paso 11 | El generador, la vista del mundo y la configuración | **Propuesta** |
-| Vista del mundo (`engine/estado/mundo.py`) | Ecosistema | Escribe solo con `tomar_alimento(x, y)` | `terreno`, `alimento`, `llamas`; nunca recibe arreglos modificables | **Propuesta** |
+| Vista del mundo (`ecosistema/estado/mundo.py`) | Ecosistema | Escribe solo con `tomar_alimento(x, y)` | `terreno`, `alimento`, `llamas`; nunca recibe arreglos modificables | **Propuesta** |
 | Serialización | Ecosistema, App | Bytes de especies, criaturas e historial | — | **Propuesta** |
 | Inspección de criatura | App | `inspeccionar_criatura(id)`: genes, estado vital, estado del autómata, edad | — | **Propuesta** (RF-20) |
 | Historial por especie | App | Muestras (tick, población, media, mínimo y máximo por estadística) | — | **Propuesta** (RF-46) |
-| Paleta (`contracts/paleta.py`) | App | Índice de color asignado a cada especie | Los 12 colores y los colores de casillas como constantes | **Propuesta** |
-| Configuración | Todos | Sección `config/vida.py` | Cargador y validación de App | Existe (hoy dentro de `schema.py`) |
+| Paleta (`contratos/paleta.py`) | App | Índice de color asignado a cada especie | Los 12 colores y los colores de casillas como constantes | **Propuesta** |
+| Configuración | Todos | Sección `config/vida.py` | Cargador y validación de App | Por crear |
 
 **Acuerdos de uso**
 
@@ -120,7 +139,7 @@ Además aplica a todos los RF del subgrupo: **RNF-05** (sorteos en orden estable
 | Modelo | Atributos (sección 2 de la especificación) | Notas |
 | --- | --- | --- |
 | Especie | id, nombre, estado (activa, extinguida, eliminada), genes base, color (mientras está activa) | El nombre de una especie eliminada queda bloqueado en esa simulación |
-| Criatura | id, especie, posición, genes (V, F, W, T), saciedad, hidratación, espera de reproducción, edad (informativa), estado del autómata, tick de nacimiento | Orden estable por `id`; **faltan dos campos** que la especificación no lista (V-DP-01) |
+| Criatura | id, especie, posición, genes (V, F, W, T), saciedad, hidratación, espera de reproducción, edad (informativa), estado del autómata, tick de nacimiento | Orden estable por `id`; incluye dos campos que la especificación aún no lista: dirección previa y acumulador de velocidad (V-DP-01, ya incluidos en la especificación) |
 | Muestra de historial | tick, especie, población, media, mínimo y máximo de cada estadística | Máximo de 5000 por especie; al excederse se reduce a la mitad la parte antigua |
 | Tabla de genes | valor base, piso (20 %) y límite técnico de V, F, W y T | Todo en la configuración |
 
@@ -140,15 +159,15 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 
 | # | Tarea | Requisito | Entregable | Depende de | Hecho cuando |
 | --- | --- | --- | --- | --- | --- |
-| V-1 | Estado de la población como arreglos NumPy por campo, ordenados por `id` | RF-38 | `estado/poblacion.py` | E-1 (reorganización de `engine/`) | Prueba de ida y vuelta de serialización |
-| V-2 | Revisar `config/vida.py` contra la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
+| V-1 | Estado de la población como arreglos NumPy por campo, ordenados por `id` | RF-38 | `vida/poblacion.py` | E-1 (estructura inicial de `ecosistema/`) | Prueba de ida y vuelta de serialización |
+| V-2 | Crear `config/vida.py` a partir de la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
 | V-3 | Coste metabólico como función pura | RF-38 (A.8) | `vida/genes.py` | V-2 | Genes base: 0.12 de saciedad por tick; los cuatro genes ×3: 0.44 (unas 3.7 veces); ×4: 0.72, es decir, 0.018 unidades de alimento por tick (Q-03) |
 | V-4 | Autómata como función de decisión pura, con una prueba por fila de la tabla de prioridades | RF-39 | `vida/automata.py` | V-2 | Incluye el caso: sed baja y comida visible, bebe primero si la hidratación es la menor |
 | V-5 | Mutación pura y pruebas de propiedades | RF-40, RNF-10 | `vida/reproduccion.py` | V-2 | El gen siempre queda entre el piso y el límite técnico; el promedio de muchas crías coincide con el promedio de los padres |
 | V-6 | Prueba de la paleta | RF-55, RNF-11 | `tests/vida/test_paleta.py` | — | Distancia CIE76 ≥ 35 contra las casillas y ≥ 45 entre los 12 colores (comprobado a mano: mínimos 36.3 y 46.3) |
 | V-7 | Orden de acción y ocupación de casillas | RF-54 | `vida/movimiento.py` | V-1 | Dos criaturas que quieren la misma casilla: entra la más fuerte; empate por `id`; nadie entra al agua |
-| V-8 | Benchmark sintético de percepción con 1000 criaturas, con visión base y con visión 25 | RNF-02 | `tests/bench/test_percepcion.py` | V-1 | Resultado anotado en `docs/ia/errores-comunes.md` o en el issue de V-DP-06 |
-| V-9 | RFC conjunta: ranura de pasos 6 a 10, serialización, inspección de criatura, historial | RF-20, RF-46, RF-49 | RFC en `docs/rfc/` | E-9 | Los tres líderes la comentan |
+| V-8 | Benchmark sintético de percepción con 1000 criaturas, con visión base y con visión 25 | RNF-02 | `tests/bench/test_percepcion.py` | V-1 | Resultado anotado en este documento o en el issue de V-DP-06 |
+| V-9 | RFC conjunta: ranura de pasos 6 a 10, serialización, inspección de criatura, historial | RF-20, RF-46, RF-49 | RFC (PR que modifica `docs/contratos.md`) | E-9 | Los tres líderes la comentan |
 
 ## 8. Pruebas y criterios de salida
 
@@ -175,7 +194,7 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 | Riesgo | Efecto | Qué hacer |
 | --- | --- | --- |
 | Costo de la percepción: el área revisada crece con el cuadrado del radio y la visión llega a 25 | Con 1000 criaturas el tick puede no alcanzar los 30 por segundo | Rejilla de ocupación y búsqueda vectorizada; medir en V-8 antes de optimizar |
-| Estado de la criatura no guardado (dirección previa, acumulador de velocidad) | Cargar una simulación cambia el futuro; falla RF-49 | Resolver V-DP-01 antes de F2 |
+| Estado de la criatura no guardado (dirección previa, acumulador de velocidad) | Cargar una simulación cambia el futuro; falla RF-49 | Resuelto en V-DP-01: ambos campos ya están en la especificación (entidad Criatura y RF-49) |
 | Iterar sobre colecciones sin orden | Rompe la reproducibilidad | Arreglos ordenados por `id`; prohibido iterar sobre `set` |
 | Población explosiva o extinciones tempranas | La demostración de G2 no es creíble | Calibrar con configuración; no tocar el código |
 | El autómata oscila entre estados | Criaturas que no avanzan | Persistencia hasta alcanzar 70 (ya en la especificación) y una prueba por transición |
@@ -196,52 +215,38 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 
 | Tema | Enlace |
 | --- | --- |
-| Glosario y entidades | [Sección 2](../spec/especificacion.md#2-glosario-y-modelo-de-dominio) |
-| Decisiones D-03, D-04, D-16, D-23 a D-33 | [Sección 3](../spec/especificacion.md#3-decisiones-y-resolución-de-puntos-abiertos) |
-| Q-03 a Q-06, Q-10 a Q-13 | [Resolución de los puntos abiertos](../spec/especificacion.md#resolución-de-los-puntos-abiertos) |
-| Requisitos funcionales | [Sección 4](../spec/especificacion.md#4-requisitos-funcionales) |
-| Orden del tick | [Sección 5](../spec/especificacion.md#orden-del-tick) |
-| Genes y estado vital | [Sección 5](../spec/especificacion.md#criaturas-genes-y-estado-vital) |
-| Autómata de estados finitos | [Sección 5](../spec/especificacion.md#criaturas-autómata-de-estados-finitos) |
-| Movimiento, depredación, reproducción y muerte | [Movimiento](../spec/especificacion.md#criaturas-movimiento-y-ocupación-de-casillas) · [Depredación](../spec/especificacion.md#criaturas-depredación) · [Reproducción](../spec/especificacion.md#criaturas-reproducción-mutación-y-muerte) |
-| Tabla de parámetros | [Sección 5](../spec/especificacion.md#tabla-de-parámetros) |
-| Requisitos no funcionales | [Sección 6](../spec/especificacion.md#6-requisitos-no-funcionales) |
-| Fases | [Sección 7](../spec/especificacion.md#7-fuera-de-alcance-y-fases) |
-| Paleta y sistema visual | [Sección 8](../spec/especificacion.md#sistema-visual) |
-| Fórmulas y constantes (A.8, A.9, A.11) | [Anexo, sección 10](../spec/especificacion.md#10-anexo-fórmulas-y-constantes) |
+| Glosario y entidades | [Sección 2](especificacion.md#2-glosario-y-modelo-de-dominio) |
+| Decisiones D-03, D-04, D-16, D-23 a D-33 | [Sección 3](especificacion.md#3-decisiones-y-resolución-de-puntos-abiertos) |
+| Q-03 a Q-06, Q-10 a Q-13 | [Resolución de los puntos abiertos](especificacion.md#resolución-de-los-puntos-abiertos) |
+| Requisitos funcionales | [Sección 4](especificacion.md#4-requisitos-funcionales) |
+| Orden del tick | [Sección 5](especificacion.md#orden-del-tick) |
+| Genes y estado vital | [Sección 5](especificacion.md#criaturas-genes-y-estado-vital) |
+| Autómata de estados finitos | [Sección 5](especificacion.md#criaturas-autómata-de-estados-finitos) |
+| Movimiento, depredación, reproducción y muerte | [Movimiento](especificacion.md#criaturas-movimiento-y-ocupación-de-casillas) · [Depredación](especificacion.md#criaturas-depredación) · [Reproducción](especificacion.md#criaturas-reproducción-mutación-y-muerte) |
+| Tabla de parámetros | [Sección 5](especificacion.md#tabla-de-parámetros) |
+| Requisitos no funcionales | [Sección 6](especificacion.md#6-requisitos-no-funcionales) |
+| Fases | [Sección 7](especificacion.md#7-fuera-de-alcance-y-fases) |
+| Paleta y sistema visual | [Sección 8](especificacion.md#sistema-visual) |
+| Fórmulas y constantes (A.8, A.9, A.11) | [Anexo, sección 10](especificacion.md#10-anexo-fórmulas-y-constantes) |
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos siguen la estructura de la [propuesta de monorepo](monorepo-y-codeowners.md). Hoy **ninguno de los RF de Vida tiene prueba**: todo está por escribir, y cada prueba lleva `@pytest.mark.req("RF-xx")`.
+Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene las carpetas vacías `src/simulador/app/`, `ecosistema/` y `vida/` y una carpeta de pruebas vacía, así que **ninguna prueba existe todavía y todo está «Por escribir»**. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.req("RF-xx")`.
 
 | Requisito | Módulo (propuesto) | Prueba | Estado |
 | --- | --- | --- | --- |
-| RF-36 | `engine/vida/automata.py, engine/vida/muerte.py` | `tests/vida/test_huida_fuego.py` | Por escribir |
-| RF-37 | `engine/vida/especies.py` | `tests/vida/test_crear_especie.py` | Por escribir |
-| RF-38 | `engine/vida/genes.py, engine/estado/poblacion.py` | `tests/vida/test_genes_y_estado.py` | Por escribir |
-| RF-39 | `engine/vida/automata.py` | `tests/vida/test_automata.py` | Por escribir |
-| RF-40 | `engine/vida/reproduccion.py` | `tests/vida/test_reproduccion.py` | Por escribir |
-| RF-41 | `engine/vida/reproduccion.py, engine/vida/especies.py` | `tests/vida/test_cupo.py` | Por escribir |
-| RF-42 | `engine/vida/especies.py` | `tests/vida/test_agregar_criaturas.py` | Por escribir |
-| RF-43 | `engine/vida/especies.py` | `tests/vida/test_eliminar_criaturas.py` | Por escribir |
-| RF-44 | `engine/vida/especies.py` | `tests/vida/test_extinguir.py` | Por escribir |
-| RF-45 | `engine/vida/especies.py` | `tests/vida/test_eliminar_especie.py` | Por escribir |
-| RF-47 | `engine/vida/muerte.py` | `tests/vida/test_muerte.py` | Por escribir |
-| RF-52 | `engine/vida/especies.py` | `tests/vida/test_limite_especies.py` | Por escribir |
-| RF-53 | `engine/vida/depredacion.py` | `tests/vida/test_depredacion.py` | Por escribir |
-| RF-54 | `engine/vida/movimiento.py` | `tests/vida/test_ocupacion.py` | Por escribir |
-| RF-55 | `engine/vida/especies.py, contracts/paleta.py` | `tests/vida/test_paleta.py` | Por escribir |
-
-## Decisiones pendientes de este subgrupo
-
-Cada decisión trae una **propuesta por defecto** para no bloquear el trabajo. Mientras no se decida, se usa la propuesta y se anota en la PR.
-
-| ID | Pregunta | Propuesta por defecto | Decide | Antes de |
-| --- | --- | --- | --- | --- |
-| V-DP-01 | La criatura necesita dos datos que la especificación no lista y que afectan al futuro: la dirección previa al explorar (persistencia 0.7) y el acumulador de la parte decimal de la velocidad | Agregarlos a la entidad Criatura y a RF-49 con una PR `spec-change` | Tres líderes | Semana 3 |
-| V-DP-02 | La especificación fija la espera inicial de 200 ticks solo para las crías. ¿Qué espera tienen las criaturas de una especie nueva? | 0, por lectura literal; si la población explota, se pasa a 200 en la calibración | Líder de Vida | Semana 4 |
-| V-DP-03 | Con varias parejas aptas a distancia 1, ¿quién se empareja con quién? No está definido | La primera criatura en el orden de acción elige a la apta de menor `id`; cada criatura se empareja una vez por tick | Líder de Vida, con revisión de Ecosistema | Semana 4 |
-| V-DP-04 | ¿Quién calcula y quién guarda el historial? | Vida calcula, mantiene y reduce (D-33) dentro del estado del motor; App lo guarda y lo grafica | Líderes de Vida y App | Semana 2 |
-| V-DP-05 | ¿Dónde vive la paleta de 12 colores? | `contracts/paleta.py` como constante; App la dibuja y Vida asigna el índice | Los tres líderes | Semana 2 |
-| V-DP-06 | ¿Cómo se acelera la percepción con visión alta? | Rejilla de ocupación 100×100 más búsqueda por ventana vectorizada; decidir con la medición de V-8 | Líder de Vida | Semana 4 |
-| V-DP-07 | El orden de acción actúa por fuerza descendente; ¿se calcula una vez por tick o se reordena cuando mueren criaturas en el mismo tick? | Una vez al inicio del paso 7; las muertas se saltan | Líder de Vida | Semana 4 |
+| RF-36 | `vida/automata.py, vida/muerte.py` | `tests/vida/test_huida_fuego.py` | Por escribir |
+| RF-37 | `vida/especies.py` | `tests/vida/test_crear_especie.py` | Por escribir |
+| RF-38 | `vida/genes.py, vida/poblacion.py` | `tests/vida/test_genes_y_estado.py` | Por escribir |
+| RF-39 | `vida/automata.py` | `tests/vida/test_automata.py` | Por escribir |
+| RF-40 | `vida/reproduccion.py` | `tests/vida/test_reproduccion.py` | Por escribir |
+| RF-41 | `vida/reproduccion.py, vida/especies.py` | `tests/vida/test_cupo.py` | Por escribir |
+| RF-42 | `vida/especies.py` | `tests/vida/test_agregar_criaturas.py` | Por escribir |
+| RF-43 | `vida/especies.py` | `tests/vida/test_eliminar_criaturas.py` | Por escribir |
+| RF-44 | `vida/especies.py` | `tests/vida/test_extinguir.py` | Por escribir |
+| RF-45 | `vida/especies.py` | `tests/vida/test_eliminar_especie.py` | Por escribir |
+| RF-47 | `vida/muerte.py` | `tests/vida/test_muerte.py` | Por escribir |
+| RF-52 | `vida/especies.py` | `tests/vida/test_limite_especies.py` | Por escribir |
+| RF-53 | `vida/depredacion.py` | `tests/vida/test_depredacion.py` | Por escribir |
+| RF-54 | `vida/movimiento.py` | `tests/vida/test_ocupacion.py` | Por escribir |
+| RF-55 | `vida/especies.py, contratos/paleta.py` | `tests/vida/test_paleta.py` | Por escribir |
