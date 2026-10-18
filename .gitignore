@@ -5,3 +5,4 @@ __pycache__/
 .vscode/
 data/*.db
 data/*.sqlite
+*.egg-info/
