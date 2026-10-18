@@ -1,12 +1,29 @@
 # Especificación del simulador de ecosistema
 
-Fecha: 2026-10-12 · Actualizado: 2026-10-16 · Autor: Juan
+Fecha: 2026-10-12 · Actualizado: 2026-10-18 · Autor: Juan
 
 ## 1. Resumen y estado
 
 Este documento es la especificacion definitiva del proyecto. Los valores numéricos de las secciones 4 y 5 siguen siendo iniciales y se calibrarán con la simulación en marcha.
 
 El objetivo es una aplicación de escritorio en Python que simula un ecosistema en un mapa de 100×100 casillas. El mapa evoluciona como autómata celular (terreno, vegetación y fuego) y sobre él viven criaturas que funcionan como autómatas de estados finitos, se reproducen y mutan. El usuario observa, interviene y analiza la simulación en tiempo real.
+
+### Estado actual del repositorio (2026-10-18)
+
+El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+
+| Elemento | Estado |
+| --- | --- |
+| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
+| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
+| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla  |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
+| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
+| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+
+**Todo lo demás que este documento nombra** (contratos en código, `MotorFalso`, `AlmacenamientoMemoria`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+
+**Dependencias pendientes frente a esta especificación:** D-02 pide PySide6 y pyqtgraph, y las pruebas (secciones 6 y 9) piden `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`; ninguno está en `requirements.txt`, que hoy incluye `matplotlib`. Decisión del 2026-10-18: se mantiene D-02; las dependencias se agregan en la tarea A-11 de `app.md` y matplotlib queda solo para scripts de análisis, no para la interfaz.
 
 ## 2. Glosario y modelo de dominio
 
@@ -38,7 +55,7 @@ Entidades y atributos principales:
 | Casilla | estado, contador de ticks en el estado (solo en llamas y quemada), vegetación previa (si arde), unidades de alimento (si es pasto o árbol) |
 | Evento | tipo, origen (natural o manual), tick de inicio, duración, ticks restantes, focos (si es incendio) |
 | Especie | id, nombre, estado (activa, extinguida, eliminada), genes base, color de la paleta (mientras está activa) |
-| Criatura | id, especie, posición, genes, estado vital, edad (informativa), estado del autómata, tick de nacimiento |
+| Criatura | id, especie, posición, genes, estado vital, edad (informativa), estado del autómata, tick de nacimiento, dirección previa al explorar, acumulador de la parte decimal de la velocidad |
 | Muestra de historial | tick, especie, población, media, mínimo y máximo de cada estadística |
 
 ## 3. Decisiones y resolución de puntos abiertos
@@ -48,7 +65,7 @@ Las decisiones D-01 a D-42 se agrupan por área; D-01 a D-04 son bloqueantes y D
 | ID | Área | Decisión | Propuesta vigente |
 | --- | --- | --- | --- |
 | D-01 | Bloqueante | Modelo de estados del mapa | Una sola enumeración de 6 estados (tierra, agua, pasto, árbol, en llamas, quemada) con un contador por casilla y la vegetación previa si arde. Se descarta separar capas de terreno y fuego. |
-| D-02 | Bloqueante | Plataforma y tecnología | Aplicación local de escritorio con Python 3.12, PySide6 (interfaz), NumPy (mapa), pyqtgraph (gráficas) y SQLite (persistencia). PySide6 es la interfaz de la versión 1 y no se prevé migrar a otra tecnología. El motor se mantiene como un paquete independiente de la interfaz (RNF-04), para poder probarlo sin ventana (Q-02). |
+| D-02 | Bloqueante | Plataforma y tecnología | Aplicación local de escritorio con Python 3.11 o superior, PySide6 (interfaz), NumPy (mapa), pyqtgraph (gráficas) y SQLite (persistencia). PySide6 es la interfaz de la versión 1 y no se prevé migrar a otra tecnología. El motor se mantiene como un paquete independiente de la interfaz (RNF-04), para poder probarlo sin ventana (Q-02). |
 | D-03 | Bloqueante | Genes frente a estado | Genes: velocidad, fuerza, visión y tamaño. Estado vital: saciedad, hidratación y espera de reproducción. Solo los genes se heredan y mutan. Los genes no tienen topes de diseño: cada uno tiene un piso positivo, un límite técnico de seguridad y un coste metabólico creciente (D-24, Q-03). La edad se registra solo como dato del inspector (Q-11). |
 | D-04 | Bloqueante | Autómata de la criatura | Nueve estados: explorar, buscar comida, buscar agua, buscar pareja, reproducirse, cazar, huir del fuego, huir del depredador y morir, con prioridades fijas (sección 5, Q-05). |
 | D-05 a D-08 | Cuentas | Retiro de la gestión de cuentas | Aprobado: la versión 1 no tiene cuentas (alta, nombre y contraseña, sesión ni baja) ni nada que dependa de ellas. Las simulaciones se guardan en una biblioteca local única, sin campo de propietario. Si algún día hacen falta cuentas, se diseñarán entonces (Q-01). |
@@ -78,7 +95,7 @@ Las decisiones D-01 a D-42 se agrupan por área; D-01 a D-04 son bloqueantes y D
 | D-32 | Especies | Eliminar una cantidad | Se eligen al azar con la semilla de la simulación. |
 | D-33 | Datos | Muestreo de gráficas | Cada 10 ticks (intervalo ajustable según las pruebas): población y media, mínimo y máximo de cada estadística. Tope de 5000 muestras por especie; al excederlo se reduce a la mitad la parte antigua. |
 | D-34 | Persistencia | Guardado | Manual con botón, automático cada 1000 ticks, al pausar y al cerrar. Escritura atómica. |
-| D-35 | Persistencia | Formato | SQLite con versión de esquema; mapa y generador aleatorio como blobs. |
+| D-35 | Persistencia | Formato | SQLite con versión de esquema. El estado del motor (mapa, clima, eventos, especies, criaturas y generador aleatorio) se guarda como un único blob autodescrito, con columnas de metadatos (nombre, tick, fecha, velocidad) y el historial por especie en una tabla aparte. |
 | D-36 | Persistencia | Eliminar simulación | Confirmación que muestra el nombre. Es irreversible. |
 | D-37 | Persistencia | Semilla | Se genera al crear, se muestra y puede fijarse a mano. Misma semilla y mismas acciones en los mismos ticks dan el mismo resultado. |
 | D-38 | Interfaz | Ventana de simulación | Muestra además tick, estación y total de criaturas (n/máximo, con el máximo configurable). |
@@ -111,7 +128,7 @@ Apartir de las aportaciones grupales surgieron 13 cosas para apuntalar. Para cad
 #### Q-02 · Interfaz
 
 - **Problema:** D-02 hablaba de PySide6 «de forma provisional» con la posibilidad de pasar a Unity. Unity usa C#, y el motor, la configuración, las pruebas y la persistencia están planteados en Python. Migrar obligaba a reescribir el motor o a ejecutarlo como proceso aparte conectado por un socket.
-- **Decisión:** se sigue con PySide6 y se mantiene la separación entre motor e interfaz.
+- **Decisión:** se sigue con PySide6 y se mantiene la separación entre motor e interfaz. En el repositorio, el motor vive en `src/simulador/ecosistema` y `src/simulador/vida`, y los datos y la interfaz en `src/simulador/app`.
 - **Cómo lo resuelve:** cierra la incertidumbre antes de la fase 1. La separación se conserva porque permite probar el motor sin ventana (RNF-04) y no cuesta nada mantenerla.
 - **Dónde se aplicó:** D-02, sección 7 (otras interfaces fuera de alcance).
 
@@ -303,7 +320,7 @@ Hay 51 requisitos vigentes, cada uno con un criterio de aceptación comprobable 
 | ID | Requisito | Criterio de aceptación | Fase |
 | --- | --- | --- | --- |
 | RF-48 | Guardado manual y automático | Dada una simulación abierta, entonces se guarda con el botón, cada 1000 ticks, al pausar y al cerrar. | F1 |
-| RF-49 | Estado completo | Dada una simulación guardada y cargada, entonces mapa, clima, eventos, especies, criaturas, historial y generador aleatorio son idénticos. Misma semilla y mismas acciones dan el mismo resultado. | F1 |
+| RF-49 | Estado completo | Dada una simulación guardada y cargada, entonces mapa, clima, eventos, especies, criaturas (incluidos su dirección previa y su acumulador de velocidad), historial y generador aleatorio son idénticos. Misma semilla y mismas acciones dan el mismo resultado. | F1 |
 | RF-50 | Integridad | Dado un cierre brusco durante un guardado, entonces la última versión guardada completa sigue siendo válida al reabrir. | F1 |
 
 ### Requisitos retirados
@@ -564,11 +581,11 @@ Todos los valores viven en un único archivo de configuración y son puntos de p
 
 ## 6. Requisitos no funcionales
 
-Los documentos de origen no fijaban plataforma, rendimiento ni arquitectura; estos 11 requisitos vigentes lo hacen (RNF-07 se retiró con las cuentas y su número no se reutiliza). Las cifras de rendimiento son propuestas que hay que medir en un equipo de referencia por definir (se propone 4 núcleos y 8 GB de memoria).
+Los documentos de origen no fijaban plataforma, rendimiento ni arquitectura; estos 11 requisitos vigentes lo hacen (RNF-07 se retiró con las cuentas y su número no se reutiliza). Las cifras de rendimiento son propuestas que hay que medir en el equipo de referencia: 4 núcleos y 8 GB de memoria (confirmado el 2026-10-18).
 
 | ID | Requisito | Criterio de aceptación |
 | --- | --- | --- |
-| RNF-01 | Plataforma | Corre con Python 3.12 en Windows 10 o superior, macOS 13 o superior y Ubuntu 22.04 o superior. Se instala con un solo comando y arranca sin configuración extra. |
+| RNF-01 | Plataforma | Corre con Python 3.11 o superior en Windows 10 o superior, macOS 13 o superior y Ubuntu 22.04 o superior. Se instala con los comandos de la guía del README (`pip install -r requirements.txt` y `pip install -e .`) y arranca sin configuración extra. |
 | RNF-02 | Rendimiento del motor | Sin interfaz y en el equipo de referencia, el motor ejecuta al menos 60 ticks por segundo sin criaturas y al menos 30 con el cupo inicial de 1000 criaturas. Si no alcanza la velocidad pedida, la interfaz muestra la velocidad efectiva. Si las pruebas lo exigen, se ajusta el cupo (D-31). |
 | RNF-03 | Fluidez de la interfaz | La ventana se redibuja a 30 FPS o más y no se congela, porque el motor corre en un hilo o proceso aparte. |
 | RNF-04 | Motor separado de la interfaz | El paquete del motor no importa nada de PySide6; una prueba ejecuta 1000 ticks sin cargarlo. |
@@ -655,7 +672,7 @@ Al abrir la aplicación se llega al menú principal. Eliminar la simulación o v
 | Evento cancelado | La etiqueta de eventos deja de listarlo en el tick siguiente. |
 | Incendio sin casillas inflamables | Aviso sobre el mapa; no se crea el evento. |
 | Eliminar simulación o especie | Diálogo de confirmación que muestra el nombre. |
-| Cerrar con cambios sin guardar | Diálogo con Guardar, Descartar y Cancelar. |
+| Cerrar la ventana | Se guarda automáticamente (RF-48) sin preguntar. Si el guardado falla, diálogo con Reintentar, Cerrar sin guardar y Cancelar. |
 | Error inesperado | Mensaje con acceso al registro; el último guardado sigue intacto. |
 
 ### Sistema visual
@@ -715,6 +732,14 @@ Cada requisito se enlaza con su diseño y con la prueba que lo verifica; así ni
 | 2026-10-12 | Se corrige el anexo A.1: con sequía en verano la temperatura llega a 36 °C | Hecho |
 | 2026-10-12 | Se restaura en D-31 el comportamiento al superar el cupo | Hecho |
 | 2026-10-16 | La evolución de tierra a pasto y de pasto a árbol depende de la humedad y es probabilística en los dos sentidos: las casillas suben o bajan de nivel (D-14, D-42, RF-22, RF-23, RF-56; versión 0.4) | Aplicado; valores iniciales a calibrar |
+| 2026-10-18 | Guardado como un único blob autodescrito del motor, con metadatos e historial en tabla aparte (D-35, A-DP-01) | Aprobado y aplicado |
+| 2026-10-18 | Al cerrar se guarda sin preguntar; el diálogo solo aparece si el guardado falla (RF-48, sección 8, A-DP-02) | Aprobado y aplicado |
+| 2026-10-18 | La entidad Criatura y RF-49 incluyen la dirección previa y el acumulador de velocidad (V-DP-01) | Aprobado y aplicado |
+| 2026-10-18 | Equipo de referencia de 4 núcleos y 8 GB (sección 6, A-DP-05) | Aprobado y aplicado |
+| 2026-10-18 | Los documentos pasan a reflejar el estado real del repositorio (solo estructura; sin código, pruebas ni CI); lo que antes figuraba como existente queda como propuesta por crear | Aplicado |
+| 2026-10-18 | Python 3.11 o superior (D-02, RNF-01), como en `pyproject.toml` y el README; instalación con `pip install -r requirements.txt` y `pip install -e .` | Aplicado; pendiente de confirmar por el equipo |
+| 2026-10-18 | PySide6, pyqtgraph y pytest-qt (D-02) no están en `requirements.txt`, que hoy incluye matplotlib | Cerrado: se mantiene D-02; se agregan en A-11 y matplotlib queda solo para scripts de análisis |
+| 2026-10-18 | Nombres de clases, funciones, atributos, carpetas y archivos ajustados a las reglas de redacción de `docs/contratos.md` (español, sin tildes; clases en PascalCase, funciones en camelCase, atributos en snake_case) | Aplicado |
 
 ## 10. Anexo: fórmulas y constantes
 
