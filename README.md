@@ -146,6 +146,20 @@ git checkout -b feature/<subgrupo>-<tarea>
 
 Ejemplo: `feature/vida-reproduccion`.
 
+### 9. Antes de subir tu trabajo: pruebas y revisión
+
+Con el entorno activo, ejecuta estos tres comandos y confirma que pasan:
+
+```bash
+pytest
+ruff check
+lint-imports
+```
+
+- `pytest` corre las pruebas. Cada prueba lleva la marca `@pytest.mark.requisito("RF-xx")` con el requisito que comprueba.
+- `ruff check` revisa el estilo del código.
+- `lint-imports` comprueba que `ecosistema` y `vida` no importan `app` ni Qt.
+
 ### Qué se repite y qué no
 
 | Cuándo | Qué hacer |
@@ -154,6 +168,7 @@ Ejemplo: `feature/vida-reproduccion`.
 | Cada vez que abres una terminal nueva | Paso 5 (activar el entorno) |
 | Cada vez que empiezas una tarea | Paso 8 |
 | Si alguien cambia `requirements.txt` | Repetir `pip install -r requirements.txt` |
+| Antes de cada pull request | Paso 9 (`pytest`, `ruff check`, `lint-imports`) |
 
 ### Errores comunes
 

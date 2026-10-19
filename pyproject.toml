@@ -13,7 +13,22 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "requisito(id): vincula la prueba con un requisito (RF-xx o RNF-xx)",
+]
+addopts = "--strict-markers"
 
 [tool.ruff]
 line-length = 100
 src = ["src"]
+
+
+[tool.importlinter]
+root_package = "simulador"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "El motor no importa la aplicacion"
+type = "forbidden"
+source_modules = ["simulador.ecosistema", "simulador.vida"]
+forbidden_modules = ["simulador.app", "PySide6", "pyqtgraph"]
