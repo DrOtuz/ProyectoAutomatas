@@ -1,7 +1,7 @@
 # CONTRATOS ENTRE SUBGRUPOS
 
 # Proposito
-definir qué funciones y atributos ofrece cada subgrupo a los demás, para trabajar en paralelo sin esperarnos. Este documentodice cómo se usa cada función, no cómo funciona por dentro.
+definir qué funciones y atributos ofrece cada subgrupo a los demás, para trabajar en paralelo sin esperarnos. Este documento dice cómo se usa cada función, no cómo funciona por dentro.
 
 ---
 

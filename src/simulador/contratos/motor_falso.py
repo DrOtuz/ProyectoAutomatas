@@ -102,8 +102,7 @@ class MotorFalso(Motor):
             if comando.tipo not in self._eventos:
                 self._eventos.append(comando.tipo)
                 return [EventoNaturalIniciado(comando.tipo, OrigenEvento.manual, self._tick)]
-        elif isinstance(comando, CancelarEvento):
-            if comando.tipo in self._eventos:
-                self._eventos.remove(comando.tipo)
-                return [EventoNaturalTerminado(comando.tipo, self._tick, cancelado=True)]
+        elif isinstance(comando, CancelarEvento) and comando.tipo in self._eventos:
+            self._eventos.remove(comando.tipo)
+            return [EventoNaturalTerminado(comando.tipo, self._tick, cancelado=True)]
         return []
