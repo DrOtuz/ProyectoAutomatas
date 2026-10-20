@@ -1,0 +1,23 @@
+# Valores por defecto de la configuracion.
+# Cada valor debe coincidir con el de su seccion en src/simulador/configuracion/*.py.
+# Una prueba lo comprueba (RNF-06).
+
+[app]
+autoguardado_cada_ticks = 1000
+largo_maximo_nombre = 60
+velocidad_minima = 1
+velocidad_inicial = 10
+velocidad_maxima = 60
+tamano_casilla_px = 6
+zoom_minimo = 1
+zoom_maximo = 8
+figura_criatura = "circulo"
+pasos_deshacer = 50
+pincel_minimo = 1
+pincel_maximo = 5
+
+[ecosistema]
+# Los valores los define Ecosistema.
+
+[vida]
+# Los valores los define Vida.
