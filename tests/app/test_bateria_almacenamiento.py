@@ -3,13 +3,19 @@
 import pytest
 
 from simulador.app.almacenamiento.memoria import AlmacenamientoMemoria
+from simulador.app.almacenamiento.sqlite import AlmacenamientoSqlite
 from simulador.contratos.errores import NombreInvalido, SimulacionNoEncontrada
 
 
-@pytest.fixture(params=[AlmacenamientoMemoria])
-def almacenamiento(request):
+@pytest.fixture(params=["memoria", "sqlite"])
+def almacenamiento(request, tmp_path):
     """Cada implementacion se agrega aqui para pasar las mismas pruebas."""
-    return request.param()
+    if request.param == "memoria":
+        yield AlmacenamientoMemoria()
+    else:
+        sqlite = AlmacenamientoSqlite(tmp_path / "biblioteca.db")
+        yield sqlite
+        sqlite.cerrar()
 
 
 @pytest.mark.requisito("RF-49")
