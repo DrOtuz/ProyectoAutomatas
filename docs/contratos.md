@@ -51,7 +51,54 @@ Estos contratos viven en `src/simulador/contratos/`. Los define App y los cumple
 - Las excepciones heredan de `ErrorSimulador`.
 - El estado guardado es un `bytes` opaco: solo el motor sabe interpretarlo.
 
+
+**Formato de guardado** (RFC A-1)
+- La biblioteca es un archivo SQLite (`biblioteca.db`) con una tabla `simulaciones`: `id`, `nombre`, `nombre_clave` (nombre en minúsculas, único), `tick`, `velocidad`, `fecha_guardado` y `estado`.
+- El estado es **un único bloque de bytes** (D-35): el resultado de `Motor.aEstado()`. App lo guarda y lo devuelve sin leerlo ni modificarlo.
+- Debe contener todo lo necesario para dejar la simulación idéntica (RF-49): mapa, clima, eventos activos, especies, criaturas, historial por especie y estado del generador aleatorio. La prueba es que `huellaEstado()` antes de guardar y después de cargar coincide.
+- Debe ser **autodescrito**: lleva al principio su propia versión de formato, para que el motor pueda leer guardados antiguos o rechazar uno desconocido. `desdeEstado` lanza `ErrorSimulador` si no puede leerlo. **(Propuesta: Ecosistema define la cabecera.)**
+- Hay **dos versiones independientes**: la del esquema de SQLite, que cuida App (hoy es la 1; un archivo de una versión más nueva se rechaza sin dañarlo), y la del formato del estado, que cuida el motor.
+- La escritura es atómica (RF-50): un guardado se aplica entero o no se aplica, y un corte a mitad deja válida la versión anterior.
+- El guardado ocupa menos de 20 MB con 1000 criaturas y 5000 muestras por especie (RNF-09).
+- **Pregunta abierta, historial por especie:** D-35 lo pone en una tabla aparte (sería el esquema 2), pero eso exige que Vida lo entregue por un método del contrato que todavía no existe (RF-46, propuesta). **Propuesta mientras tanto:** el motor incluye el historial dentro del estado, y se migra a la tabla cuando exista el método.
 ---
+
+### Almacenamiento
+- **Firma:** `Almacenamiento(ABC)`
+- **Descripción:** biblioteca de simulaciones guardadas en el equipo, sin cuentas ni propietarios. La aplicación la usa para guardar y cargar; el estado del motor viaja como `bytes` sin que el almacenamiento lo interprete. Implementaciones: `AlmacenamientoSqlite` (archivo) y `AlmacenamientoMemoria` (pruebas).
+- **Métodos:**
+
+#### Almacenamiento.cargar
+- **Firma:** `cargar(simulacion_id: int) -> bytes`
+- **Descripción:** devuelve el estado guardado, tal como se guardó.
+- **Errores:** `SimulacionNoEncontrada` si no existe.
+
+#### Almacenamiento.crear
+- **Firma:** `crear(nombre: str, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion`
+- **Descripción:** guarda una simulación nueva.
+- **Parámetros:** `nombre` de 1 al largo máximo configurado (60 por defecto), sin espacios al inicio ni al final y único sin distinguir mayúsculas; `estado` son los bytes de `Motor.aEstado()`; `tick` y `velocidad` son los de la simulación.
+- **Retorno:** el resumen de la simulación creada.
+- **Errores:** `NombreInvalido` si el nombre no vale o ya existe.
+
+#### Almacenamiento.eliminar
+- **Firma:** `eliminar(simulacion_id: int) -> None`
+- **Descripción:** borra la simulación. Es irreversible (D-36).
+- **Errores:** `SimulacionNoEncontrada` si no existe.
+
+#### Almacenamiento.guardar
+- **Firma:** `guardar(simulacion_id: int, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion`
+- **Descripción:** reemplaza el estado guardado. Si el guardado se interrumpe, la versión anterior sigue válida (RF-50).
+- **Retorno:** el resumen actualizado.
+- **Errores:** `SimulacionNoEncontrada` si no existe.
+
+#### Almacenamiento.listar
+- **Firma:** `listar() -> list[ResumenSimulacion]`
+- **Descripción:** devuelve las simulaciones guardadas, sin su estado, en el orden en que se crearon.
+
+#### Almacenamiento.renombrar
+- **Firma:** `renombrar(simulacion_id: int, nombre: str) -> ResumenSimulacion`
+- **Descripción:** cambia el nombre, con las mismas reglas que `crear`.
+- **Errores:** `SimulacionNoEncontrada` si no existe; `NombreInvalido` si el nombre no vale o ya existe.
 
 ### AgregarCriaturas
 - **Firma:** `AgregarCriaturas(especie_id: int, cantidad: int)`
@@ -209,6 +256,16 @@ Estos contratos viven en `src/simulador/contratos/`. Los define App y los cumple
 - **Descripción:** comando para iniciar un evento natural a petición del usuario.
 - **Parámetros:** `tipo` del evento; `foco_x`, `foco_y` casilla de origen (solo eventos localizados, como el incendio); `radio` alcance inicial.
 - **Errores:** `ComandoInvalido` si ese evento ya está activo.
+
+### ResumenSimulacion
+- **Firma:** `ResumenSimulacion(simulacion_id: int, nombre: str, tick: int, fecha_guardado: datetime, velocidad: int)`
+- **Descripción:** datos de una simulación guardada, sin su estado. Es inmutable.
+- **Atributos:**
+  - `simulacion_id: int` identificador; no se reutiliza al borrar.
+  - `nombre: str` nombre único en la biblioteca.
+  - `tick: int` tick del último guardado.
+  - `fecha_guardado: datetime` fecha y hora del último guardado.
+  - `velocidad: int` velocidad de simulación (ticks por segundo) del último guardado.
 
 ### TipoEvento
 - **Firma:** `TipoEvento(Enum)`
