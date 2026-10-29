@@ -44,7 +44,7 @@ class Casilla:
         self.tipo = EstadoCasilla['quemada']
     def regenerar(self):
         """En caso de estar quemada, cambia el estado de una casilla a tierra"""
-        if (self.getTipo()==EstadoCasilla['quemada'] and getTickActual() - self.tick_quemada > ticks_para_regenerar):self.tipo = ['tierra']
+        if (self.getTipo()==EstadoCasilla['quemada'] and getTickActual() - self.tick_quemada > ticks_para_regenerar):self.tipo = EstadoCasilla['tierra']
     def evolucionar(self):
         """Evoluciona de  tierra a pasto o de pasto a arbol, no tiene restricciones por el momento"""
         if (self.getTipo()==EstadoCasilla['tierra']):self.tipo = EstadoCasilla['pasto'] #posiblemente meter restricciones luego
