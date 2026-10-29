@@ -47,9 +47,9 @@ class Casilla:
         if (self.getTipo()==EstadoCasilla['quemada'] and getTickActual() - self.tick_quemada > ticks_para_regenerar):self.tipo = ['tierra']
     def evolucionar(self):
         """Evoluciona de  tierra a pasto o de pasto a arbol, no tiene restricciones por el momento"""
-        if (self.getTipo()==EstadoCasilla['tierra']):self.tipo = ['pasto'] #posiblemente meter restricciones luego
-        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = ['arbol']#posiblemente meter restricciones luego
+        if (self.getTipo()==EstadoCasilla['tierra']):self.tipo = EstadoCasilla['pasto'] #posiblemente meter restricciones luego
+        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = EstadoCasilla['arbol']#posiblemente meter restricciones luego
     def involucionar(self):
         """Involuciona de  pasto a tierra  o de arbol a pasto , no tiene restricciones por el momento"""
-        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = ['tierra']#posiblemente meter restricciones luego
-        if (self.getTipo()==EstadoCasilla['arbol']):self.tipo = ['pasto']#posiblemente meter restricciones luego
+        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = EstadoCasilla['tierra']#posiblemente meter restricciones luego
+        if (self.getTipo()==EstadoCasilla['arbol']):self.tipo = EstadoCasilla['pasto']#posiblemente meter restricciones luego
