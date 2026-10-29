@@ -34,7 +34,37 @@ definir qué funciones y atributos ofrece cada subgrupo a los demás, para traba
  ---
 
 # Grupo Ecosistema -> Grupo Vida
+# Clase: `Casilla`
 
+Representa una unidad espacial dentro del ecosistema simulado. Maneja su propio estado ecológico, humedad, cantidad de alimento y su transición temporal entre diferentes estados (ej. quemada, tierra, pasto, árbol).
+
+## Atributos
+
+| Atributo | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `tipo` | `EstadoCasilla` | Estado actual del terreno en la casilla. |
+| `coordenada` | `tuple` | Posición (x, y) de la casilla dentro de la matriz del ecosistema. |
+| `humedad` | `float` | Nivel de humedad presente en la casilla. |
+| `alimento` | `int` / `float` | Cantidad de alimento disponible en esta coordenada. |
+| `tick_quemada` | `int` | Registro del instante de tiempo (`tick`) en el que la casilla fue quemada. |
+
+## Métodos
+
+### Getters
+* **`getTipo() -> EstadoCasilla`**
+  Obtiene el tipo actual de la casilla.
+* **`getHumedad() -> float`**
+  Retorna el valor de la humedad actual.
+
+### Modificadores de Estado
+* **`quemar() -> None`**
+  Registra el `tick_actual` en `tick_quemada` y cambia el estado de la casilla a `quemada`.
+* **`regenerar() -> None`**
+  Si la casilla está quemada y ha pasado el tiempo necesario (`ticks_para_regenerar`), su estado vuelve a ser `tierra`.
+* **`evolucionar() -> None`**
+  Avanza el estado ecológico de la casilla: de `tierra` pasa a `pasto`, y de `pasto` pasa a `arbol`.
+* **`involucionar() -> None`**
+  Retrocede el estado ecológico de la casilla: de `arbol` pasa a `pasto`, y de `pasto` pasa a `tierra`.
 # Grupo Ecosistema -> Grupo App
 
 # Grupo Vida -> Grupo Ecosistema
