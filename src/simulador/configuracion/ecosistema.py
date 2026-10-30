@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from simulador.configuracion.base import validarSeccion
-from simulador.contratos.instantanea import EstadoCasilla 
+from simulador.contratos.instantanea import EstadoCasilla
 
 tick_actual = 0
 ticks_para_regenerar=150
