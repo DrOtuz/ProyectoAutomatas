@@ -50,7 +50,7 @@ Fases que le tocan: **F1 Mundo vivo** (estaciones, vegetación, alimento) y **F3
 
 - No decide el comportamiento de las criaturas ni modifica la población. Los efectos del fuego sobre las criaturas (RF-36, RF-47) los resuelve **Vida** leyendo el mundo.
 - No escribe en disco ni importa `PySide6` ni el paquete `app` (regla de importación).
-- No escribe números a mano: todo parámetro sale de `config/ecosistema.py` (RNF-06).
+- No escribe números a mano: todo parámetro sale de `configuracion/ecosistema.py` (RNF-06).
 - No cambia un contrato sin RFC aprobada por los tres líderes.
 - **Única excepción de escritura ajena:** en el paso 7, Vida descuenta 1 unidad de `alimento` de la casilla que come. Ecosistema no lo hace ni lo impide **(propuesta; ver sección 5)**.
 
@@ -103,7 +103,7 @@ Los criterios completos están en la [sección 6](especificacion.md#6-requisitos
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows; instalación según el README | Colaborador | A empaqueta y prueba en Windows; E y V no usan código ni rutas específicas de un sistema |
 | RNF-02 | Rendimiento: ≥ 60 ticks/s sin criaturas y ≥ 30 con 1000 | Responsable | E mide y optimiza el tick y el mapa; V mantiene el presupuesto de los pasos 6 a 10 con el cupo lleno |
 | RNF-04 | Motor separado de la interfaz (no importa PySide6) | Responsable | E mantiene limpio el paquete del motor; A mantiene la regla de importación en la CI |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Responsable | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
@@ -129,7 +129,7 @@ Los contratos se documentan en `docs/contratos.md` y, cuando se implementen, viv
 | Vista del mundo (`ecosistema/estado/mundo.py`) | Vida | Solo lectura: `terreno`, `alimento`, `llamas`, `temperatura`, `estacion`; escritura única `tomar_alimento(x, y)` | — | **Propuesta** |
 | Serialización | App, Vida | `to_state` ensambla mapa, clima, eventos y generador; pide a Vida su sección | De Vida: bytes de especies, criaturas e historial | **Propuesta** |
 | Inspección de casilla | App | `inspeccionar_casilla(x, y)`: estado, humedad, alimento, contador | — | **Propuesta** (RF-20 no cabe hoy en el snapshot) |
-| Configuración | Todos | Sección `config/ecosistema.py` | Cargador y validación de App | Por crear |
+| Configuración | Todos | Sección `configuracion/ecosistema.py` | Cargador y validación de App | Por crear |
 
 **Acuerdos de uso**
 

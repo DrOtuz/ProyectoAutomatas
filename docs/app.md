@@ -31,7 +31,7 @@ App construye **todo lo que el usuario ve y toca, y todo lo que se guarda**: las
 | `Ejecutor` (hilo del motor), velocidad, pausa, autoguardado | El orden del tick y el generador aleatorio → **Ecosistema** |
 | SQLite, biblioteca, esquema, migraciones, escritura atómica | Cálculo de estadísticas por especie → **Vida** |
 | Cargador y validación de la configuración | Valores de los parámetros de cada sección → su subgrupo |
-| Empaquetado, CI, pruebas en tres sistemas | Cuentas, red, multijugador (fuera de la versión 1) |
+| Empaquetado, CI, pruebas en Windows | Cuentas, red, multijugador (fuera de la versión 1) |
 
 Fases que le tocan: **F1** (simulaciones, editor, ventana, guardado), **F2** (acciones en pausa), **F3** (etiqueta de eventos) y **F4** (zoom, inspector, gráficas). Puertas: **G1** y **G4**, y colabora en G2 y G3.
 
@@ -45,7 +45,7 @@ Fases que le tocan: **F1** (simulaciones, editor, ventana, guardado), **F2** (ac
 4. El **guardado**: biblioteca local única sin cuentas, escritura atómica, versión de esquema, migraciones, guardado manual y automático cada 1000 ticks, al pausar y al cerrar.
 5. El **sistema visual**: colores de casillas, figura de criatura, paleta de 12 colores, contraste mínimo de 4.5:1, textos en español.
 6. La **configuración**: cargador, validación de rangos al arrancar y prueba de que el archivo coincide con los valores por defecto.
-7. **Empaquetado, integración continua y pruebas en Windows, macOS y Ubuntu** (RNF-01).
+7. **Empaquetado, integración continua y pruebas en Windows** (RNF-01).
 8. **Errores**: registro local y mensaje al usuario sin perder el último guardado (RNF-12).
 
 **Límites (lo que App no hace)**
@@ -108,7 +108,7 @@ Los criterios completos están en la [sección 6](especificacion.md#6-requisitos
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Responsable | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows; instalación según el README | Responsable | A empaqueta y prueba en Windows; E y V no usan código ni rutas específicas de un sistema |
 | RNF-03 | Fluidez: ≥ 30 FPS, el motor corre fuera del hilo de la ventana | Responsable | A mantiene el ejecutor en segundo plano y el dibujo desde la instantánea |
 | RNF-04 | Motor separado de la interfaz (no importa PySide6) | Colaborador | E mantiene limpio el paquete del motor; A mantiene la regla de importación en la CI |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Colaborador | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
@@ -179,7 +179,7 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3), trabajan
 | A-5 | Ventana de simulación mínima | RF-13 a RF-17 | Mapa desde la instantánea, pausa, velocidad, nutrientes, barra de estado | `Ejecutor`, `MotorFalso` | La ventana se redibuja sin congelarse con un motor lento |
 | A-6 | Política de autoguardado en el `Ejecutor` | RF-48 | Guardado manual, cada 1000 ticks, al pausar y al cerrar | A-DP-02, E-DP-05 | Pruebas de cada disparador |
 | A-7 | Prueba de migración de esquema | RNF-08, RF-50 | Prueba que abre un archivo de versión anterior y migra o rechaza con error claro | — | Pasa en la CI |
-| A-8 | Crear la CI y comprobar la instalación | RNF-01 | `.github/workflows/integracion_continua.yml` y `nocturna.yml` corriendo en Ubuntu, Windows y macOS; instalación con `pip install -r requirements.txt` y `pip install -e .` | A-DP-04 | Las dos corridas pasan, o cada fallo tiene su issue |
+| A-8 | Crear la CI y comprobar la instalación | RNF-01 | `.github/workflows/integracion_continua.yml` y `nocturna.yml` corriendo en Windows; instalación con `pip install -r requirements.txt` y `pip install -e .` | A-DP-04 | Las dos corridas pasan, o cada fallo tiene su issue |
 | A-9 | Crear `configuracion/` con `base.py` (cargador y validación), una sección por subgrupo (`app.py`, `ecosistema.py`, `vida.py`) y `por_defecto.toml` | RNF-06 | Los valores de la tabla de parámetros de la especificación | — | La prueba de igualdad entre el archivo y los valores por defecto pasa |
 | A-10 | Crear etiquetas, plantillas de PR y `CODEOWNERS` | — | Etiquetas por subgrupo (y `cambio-de-oro`, `cambio-de-especificacion`) y reglas de revisión | Aprobación del comité | Una PR de prueba pide la revisión correcta |
 | A-11 | Completar dependencias y configuración de pruebas | RNF-01, RNF-10 | `requirements.txt` y `pyproject.toml` con PySide6, pyqtgraph, pytest-qt, hypothesis, pytest-cov e import-linter; marca `requisito` de pytest registrada; carpeta de pruebas llamada `tests/`; matplotlib se queda solo para scripts de análisis (las gráficas usan pyqtgraph, D-02) | — | `pip install -r requirements.txt` funciona y `pytest` no avisa de marcas desconocidas |
@@ -214,7 +214,7 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3), trabajan
 | --- | --- | --- |
 | Qt en la CI sin pantalla | Pruebas de interfaz que fallan solo en CI | `QT_QPA_PLATFORM=offscreen` y bibliotecas del sistema que se incluirán en `integracion_continua.yml` |
 | Entregar la instantánea a 60 ticks por segundo | Copias costosas con muchas criaturas | Medir; los arreglos son pequeños (100×100 de `uint8` y n×3 de `int32`) |
-| Archivos en Windows (bloqueos y rutas) | La escritura atómica se comporta distinto | Pruebas de guardado en los tres sistemas en la corrida nocturna |
+| Archivos en Windows (bloqueos y rutas) | La escritura atómica se comporta distinto | Pruebas de guardado en Windows en la corrida nocturna |
 | Cerrar con cambios sin guardar (sección 8) frente a guardar al cerrar (RF-48) | Dos comportamientos distintos | Resuelto en A-DP-02: se guarda al cerrar sin preguntar y el diálogo solo aparece si el guardado falla |
 | Historial de 5000 muestras por especie y 12 especies | Guardado más grande que 20 MB | Medir en F4 y reducir con D-33 |
 | Contratos que cambian a mitad del trabajo | Pantallas rotas | Trabajar contra falsos y exigir RFC |
@@ -270,7 +270,7 @@ Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene 
 | RF-48 | `app/ejecutor/autoguardado.py, app/almacenamiento/sqlite.py` | `tests/app/test_autoguardado.py` | Por escribir |
 | RF-49 | `app/almacenamiento/sqlite.py, ecosistema/nucleo/serializacion.py` | `tests/ecosistema/test_determinismo.py`<br>`tests/gates/test_g1.py` | Por escribir |
 | RF-50 | `app/almacenamiento/sqlite.py` | `tests/app/test_sqlite.py` | Por escribir |
-| RNF-01 | `pyproject.toml, .github/workflows/` | por escribir: tests/app/test_instalacion.py (CI en tres sistemas) | Por escribir |
+| RNF-01 | `pyproject.toml, .github/workflows/` | por escribir: tests/app/test_instalacion.py (CI en Windows) | Por escribir |
 | RNF-03 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py` | Por escribir |
 | RNF-06 | `configuracion/` | `tests/app/test_configuracion.py`<br>`tests/app/test_reglas_de_codigo.py` | Por escribir |
 | RNF-08 | `app/almacenamiento/` | `tests/app/test_sqlite.py` | Por escribir |

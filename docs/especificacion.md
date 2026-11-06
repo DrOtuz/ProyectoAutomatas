@@ -585,7 +585,7 @@ Los documentos de origen no fijaban plataforma, rendimiento ni arquitectura; est
 
 | ID | Requisito | Criterio de aceptación |
 | --- | --- | --- |
-| RNF-01 | Plataforma | Corre con Python 3.11 o superior en Windows 10 o superior, macOS 13 o superior y Ubuntu 22.04 o superior. Se instala con los comandos de la guía del README (`pip install -r requirements.txt` y `pip install -e .`) y arranca sin configuración extra. |
+| RNF-01 | Plataforma | Corre con Python 3.11 o superior en Windows 10 o superior. Se instala con los comandos de la guía del README (`pip install -r requirements.txt` y `pip install -e .`) y arranca sin configuración extra. |
 | RNF-02 | Rendimiento del motor | Sin interfaz y en el equipo de referencia, el motor ejecuta al menos 60 ticks por segundo sin criaturas y al menos 30 con el cupo inicial de 1000 criaturas. Si no alcanza la velocidad pedida, la interfaz muestra la velocidad efectiva. Si las pruebas lo exigen, se ajusta el cupo (D-31). |
 | RNF-03 | Fluidez de la interfaz | La ventana se redibuja a 30 FPS o más y no se congela, porque el motor corre en un hilo o proceso aparte. |
 | RNF-04 | Motor separado de la interfaz | El paquete del motor no importa nada de PySide6; una prueba ejecuta 1000 ticks sin cargarlo. |

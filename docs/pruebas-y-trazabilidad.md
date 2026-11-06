@@ -91,9 +91,9 @@ Cada fase termina con una **puerta**: una prueba que debe pasar antes de empezar
 | --- | --- | --- |
 | **Ecosistema** | Pasos 1 a 5 y 11 del tick, la prueba de oro, la cobertura del motor, propiedades del mundo | Funciones puras, estadísticas y escenarios con semilla, propiedades (agua fija), oro, rendimiento sin criaturas |
 | **Vida** | Pasos 6 a 10, propiedades de criaturas, paleta | Funciones puras (autómata, coste, mutación), propiedades (cupo, genes, casilla única, sin canibalismo), escenarios, benchmark de percepción (V-8) |
-| **App** | Interfaz, guardado, CI, empaquetado | Contrato de `Almacenamiento`, integridad, migración, `pytest-qt`, tamaño del guardado, accesibilidad, CI en los tres sistemas |
+| **App** | Interfaz, guardado, CI, empaquetado | Contrato de `Almacenamiento`, integridad, migración, `pytest-qt`, tamaño del guardado, accesibilidad, CI en Windows |
 
-La CI todavía no existe: App la creará (`.github/workflows/integracion_continua.yml` y la corrida nocturna `nocturna.yml`, tarea A-8) para correr las pruebas en Windows, macOS y Ubuntu (RNF-01). Mientras tanto, cada PR debe pasar `ruff check` y `pytest` antes de pedir revisión.
+La CI existe (tarea A-8): `.github/workflows/integracion_continua.yml` corre en Windows (`windows-latest`, Python 3.11) la instalación, `ruff check`, `lint-imports` y `pytest` (RNF-01). La corrida nocturna `nocturna.yml` todavía no existe: se creará cuando haya pruebas largas. Cada PR debe pasar la CI «Pruebas en Windows» antes de pedir revisión.
 
 ## 8. Cómo agregar una prueba, paso a paso
 
@@ -131,7 +131,7 @@ La CI todavía no existe: App la creará (`.github/workflows/integracion_continu
 
 | RNF | Qué exige | Cómo se prueba | Dueño |
 | --- | --- | --- | --- |
-| RNF-01 | Funciona en Windows, macOS y Ubuntu con un comando | CI en tres sistemas (`tests/app/test_instalacion.py`) | App |
+| RNF-01 | Funciona en Windows con un comando | CI en Windows (`tests/app/test_instalacion.py`) | App |
 | RNF-02 | ≥ 60 ticks/s sin criaturas; ≥ 30 con 1000 | `tests/bench/` | Ecosistema (con Vida) |
 | RNF-03 | ≥ 30 FPS, la ventana no se congela | `tests/app/test_ejecutor.py` | App |
 | RNF-04 | El motor no importa PySide6 | `tests/app/test_reglas_de_codigo.py` (import-linter) | Ecosistema |

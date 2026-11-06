@@ -54,7 +54,7 @@ Fases que le tocan: **F2 Criaturas** (casi todo) y la parte de criaturas de **F3
 - No crea generadores aleatorios: recibe el generador único y sortea siempre en el mismo orden (por `id`).
 - No decide cuándo guardar ni escribe en disco.
 - No dibuja nada ni importa `PySide6`.
-- No escribe números a mano: todo sale de `config/vida.py`.
+- No escribe números a mano: todo sale de `configuracion/vida.py`.
 - No inventa genes, estados ni reglas de dieta (fuera de alcance de la versión 1).
 
 ## 3. Requisitos funcionales asignados
@@ -98,7 +98,7 @@ Los criterios completos están en la [sección 6](especificacion.md#6-requisitos
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows; instalación según el README | Colaborador | A empaqueta y prueba en Windows; E y V no usan código ni rutas específicas de un sistema |
 | RNF-02 | Rendimiento: ≥ 60 ticks/s sin criaturas y ≥ 30 con 1000 | Colaborador | E mide y optimiza el tick y el mapa; V mantiene el presupuesto de los pasos 6 a 10 con el cupo lleno |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Colaborador | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
 | RNF-06 | Configuración única validada al arrancar | Colaborador | A es dueño del cargador, la validación y la prueba de igualdad con el archivo; E y V son dueños de sus secciones |
@@ -124,7 +124,7 @@ Además aplica a todos los RF del subgrupo: **RNF-05** (sorteos en orden estable
 | Inspección de criatura | App | `inspeccionar_criatura(id)`: genes, estado vital, estado del autómata, edad | — | **Propuesta** (RF-20) |
 | Historial por especie | App | Muestras (tick, población, media, mínimo y máximo por estadística) | — | **Propuesta** (RF-46) |
 | Paleta (`contratos/paleta.py`) | App | Índice de color asignado a cada especie | Los 12 colores y los colores de casillas como constantes | **Propuesta** |
-| Configuración | Todos | Sección `config/vida.py` | Cargador y validación de App | Por crear |
+| Configuración | Todos | Sección `configuracion/vida.py` | Cargador y validación de App | Por crear |
 
 **Acuerdos de uso**
 
@@ -160,7 +160,7 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 | # | Tarea | Requisito | Entregable | Depende de | Hecho cuando |
 | --- | --- | --- | --- | --- | --- |
 | V-1 | Estado de la población como arreglos NumPy por campo, ordenados por `id` | RF-38 | `vida/poblacion.py` | E-1 (estructura inicial de `ecosistema/`) | Prueba de ida y vuelta de serialización |
-| V-2 | Crear `config/vida.py` a partir de la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
+| V-2 | Crear `configuracion/vida.py` a partir de la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
 | V-3 | Coste metabólico como función pura | RF-38 (A.8) | `vida/genes.py` | V-2 | Genes base: 0.12 de saciedad por tick; los cuatro genes ×3: 0.44 (unas 3.7 veces); ×4: 0.72, es decir, 0.018 unidades de alimento por tick (Q-03) |
 | V-4 | Autómata como función de decisión pura, con una prueba por fila de la tabla de prioridades | RF-39 | `vida/automata.py` | V-2 | Incluye el caso: sed baja y comida visible, bebe primero si la hidratación es la menor |
 | V-5 | Mutación pura y pruebas de propiedades | RF-40, RNF-10 | `vida/reproduccion.py` | V-2 | El gen siempre queda entre el piso y el límite técnico; el promedio de muchas crías coincide con el promedio de los padres |
