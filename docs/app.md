@@ -247,33 +247,33 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3), trabajan
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene las carpetas vacías `src/simulador/app/`, `ecosistema/` y `vida/` y una carpeta de pruebas vacía, así que **ninguna prueba existe todavía y todo está «Por escribir»**. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`.
+Los módulos son una **propuesta** y las pruebas existentes son las reales: la columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`. «Existe» significa que hay al menos una prueba con la marca; «Parcial», que además faltan pruebas de la fila.
 
 | Requisito | Módulo (propuesto) | Prueba | Estado |
 | --- | --- | --- | --- |
-| RF-06 | `app/interfaz/pantallas/menu_principal.py` | `tests/app/test_flujo_menu.py` | Por escribir |
-| RF-07 | `app/interfaz/pantallas/nueva_simulacion.py` | `tests/app/test_flujo_crear.py` | Por escribir |
+| RF-06 | `app/interfaz/pantallas/menu_principal.py` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_flujo_menu.py | Parcial |
+| RF-07 | `app/interfaz/pantallas/nueva_simulacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>por escribir: tests/app/test_flujo_crear.py | Parcial |
 | RF-08 | `app/interfaz/editor/editor_mapa.py` | `tests/app/test_editor_mapa.py` | Por escribir |
 | RF-09 | `app/interfaz/editor/editor_mapa.py, ecosistema/nucleo/simulacion.py` | `tests/app/test_flujo_crear.py` | Por escribir |
-| RF-10 | `app/almacenamiento/sqlite.py, app/interfaz/pantallas/cargar.py` | `tests/app/test_contrato_almacenamiento.py` | Por escribir |
-| RF-11 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_contrato_almacenamiento.py` | Por escribir |
-| RF-12 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_contrato_almacenamiento.py` | Por escribir |
-| RF-13 | `app/interfaz/visor_mapa.py` | `tests/app/test_visor_mapa.py` | Por escribir |
-| RF-14 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_ventana.py` | Por escribir |
-| RF-15 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_velocidad.py` | Por escribir |
-| RF-16 | `app/interfaz/ventana/, ecosistema/nucleo/simulacion.py` | `tests/ecosistema/test_eventos.py` | Por escribir |
-| RF-17 | `app/interfaz/ventana/barra_estado.py` | `tests/ecosistema/test_reloj.py`<br>`tests/app/test_ventana.py` | Por escribir |
+| RF-10 | `app/almacenamiento/sqlite.py, app/interfaz/pantallas/cargar.py` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_flujo_cargar.py | Parcial |
+| RF-11 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
+| RF-12 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
+| RF-13 | `app/interfaz/visor_mapa.py` | `tests/app/test_contratos_instantanea.py`<br>por escribir: tests/app/test_visor_mapa.py | Parcial |
+| RF-14 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
+| RF-15 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_configuracion.py`<br>por escribir: tests/app/test_velocidad.py | Parcial |
+| RF-16 | `app/interfaz/ventana/, ecosistema/nucleo/simulacion.py` | `tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
+| RF-17 | `app/interfaz/ventana/barra_estado.py` | `tests/app/test_contratos_instantanea.py`<br>por escribir: tests/ecosistema/test_reloj.py, tests/app/test_ventana.py | Parcial |
 | RF-18 | `app/interfaz/ventana/panel_eventos.py` | `tests/app/test_panel_eventos.py` | Por escribir |
-| RF-19 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/ecosistema/test_eventos.py`<br>`tests/app/test_ejecutor.py` | Por escribir |
+| RF-19 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_comandos.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
 | RF-20 | `app/interfaz/visor_mapa.py, app/interfaz/inspector.py` | `tests/app/test_inspector.py` | Por escribir |
 | RF-46 | `app/interfaz/especies/detalle_especie.py, app/almacenamiento/historial.py` | `tests/app/test_graficas.py` | Por escribir |
-| RF-48 | `app/ejecutor/autoguardado.py, app/almacenamiento/sqlite.py` | `tests/app/test_autoguardado.py` | Por escribir |
-| RF-49 | `app/almacenamiento/sqlite.py, ecosistema/nucleo/serializacion.py` | `tests/ecosistema/test_determinismo.py`<br>`tests/gates/test_g1.py` | Por escribir |
-| RF-50 | `app/almacenamiento/sqlite.py` | `tests/app/test_sqlite.py` | Por escribir |
-| RNF-01 | `pyproject.toml, .github/workflows/` | por escribir: tests/app/test_instalacion.py (CI en Windows) | Por escribir |
-| RNF-03 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py` | Por escribir |
-| RNF-06 | `configuracion/` | `tests/app/test_configuracion.py`<br>`tests/app/test_reglas_de_codigo.py` | Por escribir |
-| RNF-08 | `app/almacenamiento/` | `tests/app/test_sqlite.py` | Por escribir |
+| RF-48 | `app/ejecutor/autoguardado.py, app/almacenamiento/sqlite.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>por escribir: tests/app/test_autoguardado.py | Parcial |
+| RF-49 | `app/almacenamiento/sqlite.py, ecosistema/nucleo/serializacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_determinismo.py, tests/gates/test_g1.py | Parcial |
+| RF-50 | `app/almacenamiento/sqlite.py` | `tests/app/test_sqlite.py`<br>`tests/app/test_contratos_almacenamiento.py` | Existe |
+| RNF-01 | `pyproject.toml, .github/workflows/` | `tests/app/test_humo.py`<br>por escribir: tests/app/test_instalacion.py (CI en Windows) | Parcial |
+| RNF-03 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
+| RNF-06 | `configuracion/` | `tests/app/test_configuracion.py`<br>`tests/app/test_configuracion_base.py`<br>por escribir: tests/app/test_reglas_de_codigo.py | Parcial |
+| RNF-08 | `app/almacenamiento/` | `tests/app/test_sqlite.py`<br>por escribir: tests/app/test_migracion_esquema.py | Parcial |
 | RNF-09 | `app/almacenamiento/, vida/historial.py` | por escribir: tests/app/test_tamano_guardado.py | Por escribir |
 | RNF-11 | `app/interfaz/, contratos/paleta.py` | por escribir: tests/app/test_contraste_y_paleta.py | Por escribir |
-| RNF-12 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py` | Por escribir |
+| RNF-12 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_errores.py`<br>por escribir: tests/app/test_registro_errores.py | Parcial |
