@@ -65,6 +65,98 @@ Representa una unidad espacial dentro del ecosistema simulado. Maneja su propio 
   Avanza el estado ecológico de la casilla: de `tierra` pasa a `pasto`, y de `pasto` pasa a `arbol`.
 * **`involucionar() -> None`**
   Retrocede el estado ecológico de la casilla: de `arbol` pasa a `pasto`, y de `pasto` pasa a `tierra`.
+
+  # Documentacion: eventos ambientales globales
+
+Modulo: `src/simulador/ecosistema/eventos.py`
+Parametros: seccion `EVENTOS` de `configuracion/ecosistema.py`
+Requisitos: RF-28, RF-29, RF-30, RF-31, RF-51
+
+---
+
+### EventoNatural.duracion
+- **Firma:** `duracion: int`
+- **Descripcion:** ticks totales que dura el evento.
+
+### EventoNatural.origen
+- **Firma:** `origen: str`
+- **Descripcion:** `"natural"` si salio del sorteo, `"manual"` si lo provoco el usuario.
+
+### EventoNatural.tick_inicio
+- **Firma:** `tick_inicio: int`
+- **Descripcion:** tick en que el evento empezo.
+
+### EventoNatural.ticks_restantes
+- **Firma:** `ticks_restantes: int`
+- **Descripcion:** ticks que faltan para que el evento termine.
+
+### EventoNatural.tipo
+- **Firma:** `tipo: str`
+- **Descripcion:** `"sequia"` o `"lluvia"`.
+
+---
+
+### GestorEventos.esta_en_sequia
+- **Firma:** `esta_en_sequia: bool`
+- **Descripcion:** `True` si hay una sequia activa en el tick actual. Se actualiza en cada llamada a `paso`.
+
+### GestorEventos.esta_lloviendo
+- **Firma:** `esta_lloviendo: bool`
+- **Descripcion:** `True` si hay una lluvia activa en el tick actual. Se actualiza en cada llamada a `paso`.
+
+### GestorEventos.eventos_activos
+- **Firma:** `eventos_activos: list[EventoNatural]`
+- **Descripcion:** eventos activos en el tick actual. Sirve para la etiqueta de eventos de la interfaz.
+
+### GestorEventos.cancelarEvento
+- **Firma:** `cancelarEvento(tipo: str) -> None`
+- **Descripcion:** cancela un evento activo. Termina al inicio del tick siguiente (RF-51).
+- **Parametros:** `tipo`: `"sequia"` o `"lluvia"`.
+- **Retorno:** nada.
+- **Errores:** `ErrorSimulador` si no hay un evento activo de ese tipo.
+
+### GestorEventos.factorCrecimiento
+- **Firma:** `factorCrecimiento() -> float`
+- **Descripcion:** factor que multiplica el crecimiento de la vegetacion segun el evento activo.
+- **Parametros:** ninguno.
+- **Retorno:** 0.3 con sequia, 1.5 con lluvia, 1.0 sin evento.
+- **Errores:** ninguno.
+
+### GestorEventos.modificadorHumedad
+- **Firma:** `modificadorHumedad() -> float`
+- **Descripcion:** valor que se suma a la humedad de cada casilla segun el evento activo.
+- **Parametros:** ninguno.
+- **Retorno:** -0.35 con sequia, +0.35 con lluvia, 0.0 sin evento.
+- **Errores:** ninguno.
+
+### GestorEventos.modificadorTemperatura
+- **Firma:** `modificadorTemperatura() -> float`
+- **Descripcion:** grados que se suman a la temperatura base mientras haya sequia.
+- **Parametros:** ninguno.
+- **Retorno:** +3.0 con sequia, 0.0 en otro caso.
+- **Errores:** ninguno.
+
+### GestorEventos.paso
+- **Firma:** `paso(tick: int, estacion: str, ticks_por_estacion: int) -> bool`
+- **Descripcion:** paso 2 del tick. Termina eventos vencidos o cancelados, aplica los provocados, sortea sequia y lluvia naturales, actualiza `esta_en_sequia` y `esta_lloviendo`, y sortea el foco natural de incendio. Siempre consume 5 numeros del generador aleatorio.
+- **Parametros:** `tick`: tick actual. `estacion`: `"primavera"`, `"verano"`, `"otono"` o `"invierno"`. `ticks_por_estacion`: duracion de una estacion en ticks.
+- **Retorno:** `True` si hay un foco natural de incendio este tick, para quien maneje el fuego.
+- **Errores:** `KeyError` si `estacion` no esta en la configuracion.
+
+### GestorEventos.provocarEvento
+- **Firma:** `provocarEvento(tipo: str) -> None`
+- **Descripcion:** provoca un evento a mano (RF-28). Se activa al inicio del tick siguiente. Sequia y lluvia no coexisten: provocar uno termina el otro (RF-31).
+- **Parametros:** `tipo`: `"sequia"` o `"lluvia"`.
+- **Retorno:** nada.
+- **Errores:** `ErrorSimulador` si el tipo es invalido o ya hay un evento activo del mismo tipo.
+
+### GestorEventos.__init__
+- **Firma:** `GestorEventos(rng, config=None)`
+- **Descripcion:** crea el gestor sin eventos activos.
+- **Parametros:** `rng`: generador unico de la simulacion (`Simulation._rng`). `config`: diccionario `EVENTOS`; si es `None` se lee de `configuracion/ecosistema.py`.
+- **Retorno:** instancia de `GestorEventos`.
+- **Errores:** ninguno.
+
 # Grupo Ecosistema -> Grupo App
 
 # Grupo Vida -> Grupo Ecosistema
