@@ -28,17 +28,17 @@ Requisito (RF/RNF)  →  Módulo (archivo de código)  →  Prueba (archivo de t
 ### Cómo leer el Estado
 
 - **Por escribir:** todavía no hay ninguna prueba para ese requisito.
-- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito`. **No significa que cubra todo el criterio** (por ejemplo, una prueba de sequía que solo revise la temperatura). Hoy no hay ninguna.
+- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito`. **No significa que cubra todo el criterio** (por ejemplo, una prueba de sequía que solo revise la temperatura). Hoy solo RF-50 está en «Existe»; los demás requisitos con pruebas están en «Parcial».
 - **Parcial:** hay una parte de las pruebas y falta otra (p. ej. RNF-02 cuando exista el benchmark sin criaturas pero falte el de 1000).
 
-Nota: versiones anteriores de las tablas marcaban varios requisitos como «Existe» por un kit de pruebas que no está en este repositorio. Hoy el repositorio no tiene código ni pruebas, así que todas las filas están «Por escribir».
+Nota: versiones anteriores de las tablas marcaban varios requisitos como «Existe» por un kit de pruebas que no está en este repositorio. Hoy hay código y pruebas solo del subgrupo App (`tests/app/`); `ecosistema/` y `vida/` no tienen código, así que sus pruebas del motor real están «Por escribir».
 
 ## 3. Las dos tablas de trazabilidad
 
 1. **En la especificación (sección 9):** vista general por área (simulaciones, ventana, mapa, eventos, criaturas, persistencia, no funcionales). Dice qué tipo de prueba aplica a cada área.
 2. **En cada subgrupo (`app.md`, `ecosistema.md`, `vida.md`):** una fila por requisito con módulo, archivo de prueba y estado. Es la que se usa a diario.
 
-Reglas acordadas (decisión A-DP-07): la matriz se **regenera en la integración continua (CI)** y **cada subgrupo responde por sus propias filas**. Hoy ningún requisito de ningún subgrupo tiene prueba: la carpeta de pruebas está vacía y todo está «Por escribir».
+Reglas acordadas (decisión A-DP-07): la matriz se **regenera en la integración continua (CI)** y **cada subgrupo responde por sus propias filas**. Hoy hay pruebas con la marca `requisito` para 26 requisitos, todas en `tests/app/`: 19 de App, 4 de Ecosistema y 3 de Vida. Las siete de Ecosistema y Vida comprueban solo los contratos y el `MotorFalso`, no el motor real. El resto está «Por escribir».
 
 ## 4. Tipos de prueba que se mencionan
 
@@ -100,7 +100,7 @@ La CI existe (tarea A-8): `.github/workflows/integracion_continua.yml` corre en 
 1. **Elige el requisito** en la tabla de tu subgrupo cuyo estado sea «Por escribir» (o «Parcial»).
 2. **Lee su criterio** «Dado / Cuando / Entonces» en la especificación: eso es lo que la prueba debe comprobar.
 3. **Crea el archivo** en la ruta que indica la columna «Prueba» (p. ej. `tests/ecosistema/test_alimento.py`).
-4. **Escribe la prueba** con la marca del requisito (la marca `requisito` debe registrarse en `pyproject.toml`; tarea A-11). Ejemplo ilustrativo (no es código del repositorio):
+4. **Escribe la prueba** con la marca del requisito (la marca `requisito` ya está registrada en `pyproject.toml`; tarea A-11). Ejemplo ilustrativo (no es código del repositorio):
 
    ```python
    import pytest
@@ -114,7 +114,7 @@ La CI existe (tarea A-8): `.github/workflows/integracion_continua.yml` corre en 
    ```
 
 5. **Si hay azar**, usa semilla fija. **Si algo debe cumplirse siempre**, hazla de propiedades.
-6. **Corre `ruff check` y `pytest`** (y la CI, cuando exista).
+6. **Corre `ruff check`, `lint-imports` y `pytest`** (la CI corre los tres).
 7. **Actualiza la fila** de tu subgrupo: «Por escribir» pasa a «Existe» (o «Parcial» si solo cubre una parte del criterio).
 8. **Si tu cambio altera la huella de oro**, abre una PR aparte con la etiqueta `cambio-de-oro` (sección 5).
 

@@ -3,22 +3,26 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [Vida](vida.md) 
 
-## Estado actual del repositorio (2026-10-18)
+## Estado actual del repositorio (2026-11-06)
 
-El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
-| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
-| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla (tarea A-11) |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
-| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
-| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
+| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
+| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
+| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
+| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
+| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
 
-**Todo lo demás que este documento nombra** (contratos en código, `MotorFalso`, `AlmacenamientoMemoria`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+**Lo que este documento nombra y sigue siendo propuesta:** la interfaz (`app/interfaz/`), el editor de mapa, el autoguardado, el registro de errores, la carpeta de datos, el empaquetado y los módulos de `ecosistema/` y `vida/`. `MotorFalso` y `AlmacenamientoMemoria` ya existen en el código.
 
-**Falta para App:** `PySide6`, `pyqtgraph` y `pytest-qt` (D-02 de la especificación) no están en `requirements.txt`, que hoy incluye `matplotlib`; tampoco hay `.github/` (CI), `CODEOWNERS`, etiquetas ni comando de arranque. Ver A-11.
+**Todavía no existen:** `.github/CODEOWNERS`, la corrida nocturna `nocturna.yml` y el comando de arranque de la aplicación. La plantilla de PR y las etiquetas ya existen (A-10).
 
 ## 1. Propósito y alcance
 

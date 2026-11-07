@@ -3,22 +3,26 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Vida](vida.md) · [App](app.md) 
 
-## Estado actual del repositorio (2026-10-18)
+## Estado actual del repositorio (2026-11-06)
 
-El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
-| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
-| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla (tarea A-11) |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
-| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
-| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
+| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
+| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
+| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
+| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
+| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
 
-**Todo lo demás que este documento nombra** (contratos en código, `FakeEngine`, `InMemoryStorage`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+**Lo que este documento nombra y sigue siendo propuesta:** los módulos de `ecosistema/` (`nucleo/`, `estado/`, reloj, vegetación, eventos y fuego), la prueba de oro, la vista del mundo, la ranura de los pasos 6 a 10, la serialización y la inspección de casilla. En el código, lo que este documento llama `FakeEngine` e `InMemoryStorage` se llama `MotorFalso` y `AlmacenamientoMemoria`.
 
-**Falta para Ecosistema:** `hypothesis` (pruebas de propiedades), `pytest-cov` (cobertura ≥ 80 %, RNF-10) e `import-linter` (regla de importación, RNF-04) no están en `requirements.txt`. Ver A-11 en `app.md`.
+**Para Ecosistema:** `hypothesis`, `pytest-cov` e `import-linter` ya están en `requirements.txt`, y la regla de importación (RNF-04) ya corre en la CI con `lint-imports`. Todavía no existen `.github/CODEOWNERS` ni la corrida nocturna `nocturna.yml`.
 
 ## 1. Propósito y alcance
 
