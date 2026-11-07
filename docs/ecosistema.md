@@ -232,7 +232,7 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3). Cada tar
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene las carpetas vacías `src/simulador/app/`, `ecosistema/` y `vida/` y una carpeta de pruebas vacía, así que **ninguna prueba existe todavía y todo está «Por escribir»**. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.req("RF-xx")`.
+Los módulos son una **propuesta**. La columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las pruebas existentes de estas filas están en `tests/app/` y comprueban los contratos y el `MotorFalso`, no el motor real de Ecosistema, que todavía no está implementado (`src/simulador/ecosistema/` solo tiene `__init__.py`). Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`.
 
 | Requisito | Módulo (propuesto) | Prueba | Estado |
 | --- | --- | --- | --- |
@@ -244,16 +244,16 @@ Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene 
 | RF-26 | `ecosistema/vegetacion.py` | `tests/ecosistema/test_regeneracion.py` | Por escribir |
 | RF-56 | `ecosistema/vegetacion.py` | `tests/ecosistema/test_retroceso.py` | Por escribir |
 | RF-27 | `ecosistema/eventos.py` | `tests/ecosistema/test_eventos.py` | Por escribir |
-| RF-28 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/ecosistema/test_eventos.py`<br>`tests/app/test_ventana.py` | Por escribir |
+| RF-28 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_contratos_comandos.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py, tests/app/test_ventana.py | Parcial |
 | RF-29 | `ecosistema/eventos.py` | `tests/ecosistema/test_reloj.py` | Por escribir |
 | RF-30 | `ecosistema/eventos.py` | `tests/ecosistema/test_lluvia.py` | Por escribir |
-| RF-31 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/ecosistema/test_eventos.py` | Por escribir |
-| RF-51 | `ecosistema/eventos.py, app/ui/ventana/panel_eventos.py` | `tests/ecosistema/test_eventos.py` | Por escribir |
+| RF-31 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
+| RF-51 | `ecosistema/eventos.py, app/ui/ventana/panel_eventos.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
 | RF-32 | `ecosistema/fuego.py, app/ui/mapa_widget.py` | `tests/ecosistema/test_fuego_inicio.py` | Por escribir |
 | RF-33 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_propagacion.py` | Por escribir |
 | RF-34 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_extincion.py` | Por escribir |
 | RF-35 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_efectos.py` | Por escribir |
 | RNF-02 | `ecosistema/nucleo/, vida/` | `tests/bench/test_rendimiento.py`<br>por escribir: tests/bench/test_rendimiento_1000.py | Por escribir |
 | RNF-04 | `ecosistema/, vida/, pyproject.toml (import-linter)` | `tests/app/test_reglas_de_codigo.py` | Por escribir |
-| RNF-05 | `ecosistema/nucleo/` | `tests/ecosistema/test_determinismo.py`<br>`tests/ecosistema/test_golden.py`<br>`tests/app/test_reglas_de_codigo.py` | Por escribir |
+| RNF-05 | `ecosistema/nucleo/` | `tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_determinismo.py, tests/ecosistema/test_golden.py, tests/app/test_reglas_de_codigo.py | Parcial |
 | RNF-10 | `tests/` | por escribir: tests/ecosistema/test_propiedades_mundo.py, tests/vida/test_propiedades_vida.py | Por escribir |
