@@ -2,7 +2,8 @@ import time
 
 import pytest
 
-from simulador.app.ejecutor.ejecutor import VELOCIDAD_MAXIMA, VELOCIDAD_MINIMA, Ejecutor
+from simulador.app.ejecutor.ejecutor import Ejecutor
+from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.comandos import FijarNutrientes
 from simulador.contratos.errores import ComandoInvalido
 from simulador.contratos.motor_falso import MotorFalso
@@ -60,10 +61,11 @@ def test_reanudar_avanza_y_pausar_detiene(crearEjecutor):
 @pytest.mark.requisito("RF-15")
 def test_velocidad_fuera_de_rango_se_rechaza(crearEjecutor):
     ejecutor = crearEjecutor()
+    configuracion = ConfiguracionApp()
     with pytest.raises(ValueError):
-        ejecutor.fijarVelocidad(VELOCIDAD_MINIMA - 1)
+        ejecutor.fijarVelocidad(configuracion.velocidad_minima - 1)
     with pytest.raises(ValueError):
-        ejecutor.fijarVelocidad(VELOCIDAD_MAXIMA + 1)
+        ejecutor.fijarVelocidad(configuracion.velocidad_maxima + 1)
     with pytest.raises(ValueError):
         Ejecutor(MotorFalso(), 0)
 
@@ -77,6 +79,24 @@ def test_velocidad_regula_el_ritmo(crearEjecutor):
     assert 4 <= ejecutor.obtenerInstantanea().tick <= 16  # esperado: cerca de 10
     ejecutor.fijarVelocidad(30)
     assert ejecutor.velocidad == 30
+
+
+@pytest.mark.requisito("RF-15")
+def test_sin_velocidad_arranca_con_la_inicial_de_la_configuracion():
+    configuracion = ConfiguracionApp(velocidad_minima=2, velocidad_inicial=7, velocidad_maxima=30)
+    ejecutor = Ejecutor(MotorFalso(), configuracion=configuracion)
+    assert ejecutor.velocidad == 7
+
+
+@pytest.mark.requisito("RF-15")
+def test_los_limites_de_velocidad_salen_de_la_configuracion():
+    configuracion = ConfiguracionApp(velocidad_minima=2, velocidad_inicial=7, velocidad_maxima=30)
+    ejecutor = Ejecutor(MotorFalso(), configuracion=configuracion)
+    ejecutor.fijarVelocidad(30)
+    with pytest.raises(ValueError):
+        ejecutor.fijarVelocidad(31)
+    with pytest.raises(ValueError):
+        ejecutor.fijarVelocidad(1)
 
 
 @pytest.mark.requisito("RNF-03")
