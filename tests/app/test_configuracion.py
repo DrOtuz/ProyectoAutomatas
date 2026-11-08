@@ -85,3 +85,11 @@ def test_la_velocidad_inicial_debe_estar_entre_la_minima_y_la_maxima():
 def test_la_figura_debe_ser_una_de_las_permitidas():
     with pytest.raises(ErrorConfiguracion, match="figura_criatura"):
         ConfiguracionApp(figura_criatura="estrella")
+
+
+@pytest.mark.requisito("RNF-01")
+def test_archivo_por_defecto_existe_como_dato_del_paquete():
+    from simulador.configuracion.cargador import RUTA_POR_DEFECTO
+
+    assert RUTA_POR_DEFECTO.exists()
+    assert RUTA_POR_DEFECTO.is_file()
