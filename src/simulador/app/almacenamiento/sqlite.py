@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento, ResumenSimulacion, validarNombre
 from simulador.contratos.errores import ErrorSimulador, NombreInvalido, SimulacionNoEncontrada
 
@@ -36,7 +37,10 @@ class ErrorEsquema(ErrorSimulador):
 class AlmacenamientoSqlite(Almacenamiento):
     """Biblioteca de simulaciones guardada en un archivo SQLite con version de esquema."""
 
-    def __init__(self, ruta: str | Path) -> None:
+    def __init__(
+        self, ruta: str | Path, configuracion: ConfiguracionApp | None = None
+    ) -> None:
+        self._configuracion = configuracion if configuracion is not None else ConfiguracionApp()
         Path(ruta).parent.mkdir(parents=True, exist_ok=True)
         self._conexion = sqlite3.connect(str(ruta), isolation_level=None)
         try:
@@ -50,7 +54,7 @@ class AlmacenamientoSqlite(Almacenamiento):
         self._conexion.close()
 
     def crear(self, nombre: str, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion:
-        validarNombre(nombre)
+        validarNombre(nombre, self._configuracion.largo_maximo_nombre)
         ahora = datetime.now()
         try:
             with self._transaccion() as conexion:
@@ -100,7 +104,7 @@ class AlmacenamientoSqlite(Almacenamiento):
 
     def renombrar(self, simulacion_id: int, nombre: str) -> ResumenSimulacion:
         self._obtenerResumen(simulacion_id)
-        validarNombre(nombre)
+        validarNombre(nombre, self._configuracion.largo_maximo_nombre)
         try:
             with self._transaccion() as conexion:
                 conexion.execute(
