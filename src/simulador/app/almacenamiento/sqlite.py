@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +27,8 @@ CREATE TABLE simulaciones (
 """
 
 _COLUMNAS_RESUMEN = "id, nombre, tick, fecha_guardado, velocidad"
+
+_MIGRACIONES: dict[int, Callable[[sqlite3.Connection], None]] = {}
 
 
 class ErrorEsquema(ErrorSimulador):
@@ -127,9 +129,14 @@ class AlmacenamientoSqlite(Almacenamiento):
                 f"El archivo fue creado por una version mas nueva del programa (esquema "
                 f"{version}); este programa conoce hasta el esquema {VERSION_ESQUEMA}."
             )
-        if version == 0:
+        if version < VERSION_ESQUEMA:
             with self._transaccion() as conexion:
-                conexion.execute(_CREAR_TABLA_V1)
+                if version == 0:
+                    conexion.execute(_CREAR_TABLA_V1)
+                    version = 1
+                for v in range(version + 1, VERSION_ESQUEMA + 1):
+                    if v in _MIGRACIONES:
+                        _MIGRACIONES[v](conexion)
                 conexion.execute(f"PRAGMA user_version = {VERSION_ESQUEMA}")
 
     @contextmanager
