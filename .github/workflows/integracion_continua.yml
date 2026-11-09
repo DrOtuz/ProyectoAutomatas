@@ -11,8 +11,12 @@ permissions:
 
 jobs:
   pruebas:
-    name: Pruebas en Windows
-    runs-on: windows-latest
+    name: Pruebas en ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
@@ -37,3 +41,6 @@ jobs:
 
       - name: Pruebas
         run: pytest
+
+      - name: Trazabilidad de requisitos
+        run: python scripts/verificar_trazabilidad.py
