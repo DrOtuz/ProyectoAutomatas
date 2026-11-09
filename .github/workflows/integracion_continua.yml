@@ -13,6 +13,7 @@ jobs:
   pruebas:
     name: Pruebas en Windows
     runs-on: windows-latest
+    
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
@@ -37,3 +38,6 @@ jobs:
 
       - name: Pruebas
         run: pytest
+
+      - name: Trazabilidad de requisitos
+        run: python scripts/verificar_trazabilidad.py
