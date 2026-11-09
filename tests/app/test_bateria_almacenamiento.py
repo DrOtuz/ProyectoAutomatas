@@ -76,3 +76,20 @@ def test_eliminar_borra_la_simulacion(almacenamiento):
 def test_cargar_una_simulacion_inexistente_falla(almacenamiento):
     with pytest.raises(SimulacionNoEncontrada):
         almacenamiento.cargar(999)
+
+
+@pytest.mark.requisito("RNF-06")
+def test_almacenamiento_respeta_el_largo_maximo_de_la_configuracion(tmp_path):
+    from simulador.configuracion.app import ConfiguracionApp
+
+    config = ConfiguracionApp(largo_maximo_nombre=5)
+    memoria = AlmacenamientoMemoria(configuracion=config)
+    with pytest.raises(NombreInvalido):
+        memoria.crear("123456", b"a", tick=0, velocidad=1)
+    memoria.crear("12345", b"a", tick=0, velocidad=1)
+
+    sqlite = AlmacenamientoSqlite(tmp_path / "custom.db", configuracion=config)
+    with pytest.raises(NombreInvalido):
+        sqlite.crear("123456", b"a", tick=0, velocidad=1)
+    sqlite.crear("12345", b"a", tick=0, velocidad=1)
+    sqlite.cerrar()
