@@ -28,17 +28,17 @@ Requisito (RF/RNF)  →  Módulo (archivo de código)  →  Prueba (archivo de t
 ### Cómo leer el Estado
 
 - **Por escribir:** todavía no hay ninguna prueba para ese requisito.
-- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito`. **No significa que cubra todo el criterio** (por ejemplo, una prueba de sequía que solo revise la temperatura). Hoy no hay ninguna.
+- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito`. **No significa que cubra todo el criterio** (por ejemplo, una prueba de sequía que solo revise la temperatura). Hoy solo RF-50 está en «Existe»; los demás requisitos con pruebas están en «Parcial».
 - **Parcial:** hay una parte de las pruebas y falta otra (p. ej. RNF-02 cuando exista el benchmark sin criaturas pero falte el de 1000).
 
-Nota: versiones anteriores de las tablas marcaban varios requisitos como «Existe» por un kit de pruebas que no está en este repositorio. Hoy el repositorio no tiene código ni pruebas, así que todas las filas están «Por escribir».
+Nota: versiones anteriores de las tablas marcaban varios requisitos como «Existe» por un kit de pruebas que no está en este repositorio. Hoy hay código y pruebas solo del subgrupo App (`tests/app/`); `ecosistema/` y `vida/` no tienen código, así que sus pruebas del motor real están «Por escribir».
 
 ## 3. Las dos tablas de trazabilidad
 
 1. **En la especificación (sección 9):** vista general por área (simulaciones, ventana, mapa, eventos, criaturas, persistencia, no funcionales). Dice qué tipo de prueba aplica a cada área.
 2. **En cada subgrupo (`app.md`, `ecosistema.md`, `vida.md`):** una fila por requisito con módulo, archivo de prueba y estado. Es la que se usa a diario.
 
-Reglas acordadas (decisión A-DP-07): la matriz se **regenera en la integración continua (CI)** y **cada subgrupo responde por sus propias filas**. Hoy ningún requisito de ningún subgrupo tiene prueba: la carpeta de pruebas está vacía y todo está «Por escribir».
+Reglas acordadas (decisión A-DP-07): la matriz se **regenera en la integración continua (CI)** y **cada subgrupo responde por sus propias filas**. Hoy hay pruebas con la marca `requisito` para 26 requisitos, todas en `tests/app/`: 19 de App, 4 de Ecosistema y 3 de Vida. Las siete de Ecosistema y Vida comprueban solo los contratos y el `MotorFalso`, no el motor real. El resto está «Por escribir».
 
 ## 4. Tipos de prueba que se mencionan
 
@@ -91,16 +91,16 @@ Cada fase termina con una **puerta**: una prueba que debe pasar antes de empezar
 | --- | --- | --- |
 | **Ecosistema** | Pasos 1 a 5 y 11 del tick, la prueba de oro, la cobertura del motor, propiedades del mundo | Funciones puras, estadísticas y escenarios con semilla, propiedades (agua fija), oro, rendimiento sin criaturas |
 | **Vida** | Pasos 6 a 10, propiedades de criaturas, paleta | Funciones puras (autómata, coste, mutación), propiedades (cupo, genes, casilla única, sin canibalismo), escenarios, benchmark de percepción (V-8) |
-| **App** | Interfaz, guardado, CI, empaquetado | Contrato de `Almacenamiento`, integridad, migración, `pytest-qt`, tamaño del guardado, accesibilidad, CI en los tres sistemas |
+| **App** | Interfaz, guardado, CI, empaquetado | Contrato de `Almacenamiento`, integridad, migración, `pytest-qt`, tamaño del guardado, accesibilidad, CI en Windows |
 
-La CI todavía no existe: App la creará (`.github/workflows/integracion_continua.yml` y la corrida nocturna `nocturna.yml`, tarea A-8) para correr las pruebas en Windows, macOS y Ubuntu (RNF-01). Mientras tanto, cada PR debe pasar `ruff check` y `pytest` antes de pedir revisión.
+La CI existe (tarea A-8): `.github/workflows/integracion_continua.yml` corre en Windows (`windows-latest`, Python 3.11) la instalación, `ruff check`, `lint-imports` y `pytest` (RNF-01). La corrida nocturna `nocturna.yml` todavía no existe: se creará cuando haya pruebas largas. Cada PR debe pasar la CI «Pruebas en Windows» antes de pedir revisión.
 
 ## 8. Cómo agregar una prueba, paso a paso
 
 1. **Elige el requisito** en la tabla de tu subgrupo cuyo estado sea «Por escribir» (o «Parcial»).
 2. **Lee su criterio** «Dado / Cuando / Entonces» en la especificación: eso es lo que la prueba debe comprobar.
 3. **Crea el archivo** en la ruta que indica la columna «Prueba» (p. ej. `tests/ecosistema/test_alimento.py`).
-4. **Escribe la prueba** con la marca del requisito (la marca `requisito` debe registrarse en `pyproject.toml`; tarea A-11). Ejemplo ilustrativo (no es código del repositorio):
+4. **Escribe la prueba** con la marca del requisito (la marca `requisito` ya está registrada en `pyproject.toml`; tarea A-11). Ejemplo ilustrativo (no es código del repositorio):
 
    ```python
    import pytest
@@ -114,7 +114,7 @@ La CI todavía no existe: App la creará (`.github/workflows/integracion_continu
    ```
 
 5. **Si hay azar**, usa semilla fija. **Si algo debe cumplirse siempre**, hazla de propiedades.
-6. **Corre `ruff check` y `pytest`** (y la CI, cuando exista).
+6. **Corre `ruff check`, `lint-imports` y `pytest`** (la CI corre los tres).
 7. **Actualiza la fila** de tu subgrupo: «Por escribir» pasa a «Existe» (o «Parcial» si solo cubre una parte del criterio).
 8. **Si tu cambio altera la huella de oro**, abre una PR aparte con la etiqueta `cambio-de-oro` (sección 5).
 
@@ -131,7 +131,7 @@ La CI todavía no existe: App la creará (`.github/workflows/integracion_continu
 
 | RNF | Qué exige | Cómo se prueba | Dueño |
 | --- | --- | --- | --- |
-| RNF-01 | Funciona en Windows, macOS y Ubuntu con un comando | CI en tres sistemas (`tests/app/test_instalacion.py`) | App |
+| RNF-01 | Funciona en Windows con un comando | CI en Windows (`tests/app/test_instalacion.py`) | App |
 | RNF-02 | ≥ 60 ticks/s sin criaturas; ≥ 30 con 1000 | `tests/bench/` | Ecosistema (con Vida) |
 | RNF-03 | ≥ 30 FPS, la ventana no se congela | `tests/app/test_ejecutor.py` | App |
 | RNF-04 | El motor no importa PySide6 | `tests/app/test_reglas_de_codigo.py` (import-linter) | Ecosistema |
