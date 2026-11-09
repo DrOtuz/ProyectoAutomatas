@@ -23,7 +23,9 @@ Descripción: Simulador de evolución de criaturas en un ecosistema.
 
 ## Sobre acuerdos entre subgrupos
 
-En la carpeta docs hay un documento llamado 'contratos.md' en el que se definirá qué funciones y atributos ofrece cada subgrupo a los demás.
+En la carpeta `docs` se encuentran los acuerdos técnicos y estándares del proyecto:
+- **`docs/contratos.md`:** define las funciones, métodos y atributos que cada subgrupo ofrece a los demás.
+- **`docs/guia-de-calidad.md`:** estándares de código, pruebas, arquitectura y flujo de Git para todo el equipo.
 
 ## Sobre las ramas de desarrollo
 - **main**
@@ -47,8 +49,8 @@ En la carpeta docs hay un documento llamado 'contratos.md' en el que se definir�
 - `git checkout -b feature/subgrupo-tarea`
 
 3. Programar, y guardar cambios en commits pequeños
-- `git add .`
-- `git commit -m "descripción"`
+- `git add <archivos>`
+- `git commit -m "tipo(subgrupo): descripción"`
 
 4. Subir tu rama
 - `git push -u origin feature/subgrupo-tarea`
@@ -152,12 +154,12 @@ Con el entorno activo, ejecuta estos tres comandos y confirma que pasan:
 
 ```bash
 pytest
-ruff check
+ruff check .
 lint-imports
 ```
 
 - `pytest` corre las pruebas. Cada prueba lleva la marca `@pytest.mark.requisito("RF-xx")` con el requisito que comprueba.
-- `ruff check` revisa el estilo del código.
+- `ruff check .` revisa el estilo del código.
 - `lint-imports` comprueba que `ecosistema` y `vida` no importan `app` ni Qt.
 
 ### Qué se repite y qué no
