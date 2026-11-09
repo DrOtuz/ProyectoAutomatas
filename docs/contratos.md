@@ -369,6 +369,10 @@ Estos contratos viven en `src/simulador/contratos/`. Los define App y los cumple
 - **Descripción:** motor de pruebas de App (`simulador.contratos.motor_falso`). Cumple `Motor` sin ecosistema ni criaturas, para probar la interfaz sin esperar al motor real. Soporta `FijarNutrientes`, `ProvocarEvento` y `CancelarEvento`; el resto de comandos lanzan `ComandoNoSoportado`.
 - **Parámetros:** `tamano` lado del terreno; `retardo` segundos que tarda cada `avanzar` (para simular un motor lento).
 
+### NombreInvalido
+- **Firma:** `NombreInvalido(ErrorSimulador)`
+- **Descripción:** el nombre de una simulación no cumple las reglas (de 1 al largo máximo, sin espacios al inicio ni al final) o ya lo usa otra simulación guardada. Lo lanzan `validarNombre`, `Almacenamiento.crear` y `Almacenamiento.renombrar`.
+
 ### OrigenEvento
 - **Firma:** `OrigenEvento(Enum)`
 - **Descripción:** quién inició un evento. Valores: `natural`, `manual`.
@@ -389,12 +393,22 @@ Estos contratos viven en `src/simulador/contratos/`. Los define App y los cumple
   - `fecha_guardado: datetime` fecha y hora del último guardado.
   - `velocidad: int` velocidad de simulación (ticks por segundo) del último guardado.
 
+### SimulacionNoEncontrada
+- **Firma:** `SimulacionNoEncontrada(ErrorSimulador)`
+- **Descripción:** no existe una simulación guardada con ese identificador. Lo lanzan `Almacenamiento.cargar`, `Almacenamiento.guardar`, `Almacenamiento.eliminar` y `Almacenamiento.renombrar`.
+
 ### TipoEvento
 - **Firma:** `TipoEvento(Enum)`
 - **Descripción:** tipos de evento natural. Valores: `sequia`, `lluvia`, `incendio`.
+### validarNombre
+- **Firma:** `validarNombre(nombre: str) -> str` (función de `simulador.contratos.almacenamiento`, no pertenece a ninguna clase)
+- **Descripción:** comprueba las reglas del nombre de una simulación: de 1 al largo máximo y sin espacios al inicio ni al final. El largo máximo es 60 por ahora (constante provisional `LARGO_MAXIMO_NOMBRE`; pasará a la configuración). Que el nombre no se repita, sin distinguir mayúsculas, no lo comprueba esta función: lo comprueba cada implementación de `Almacenamiento`.
+- **Parámetros:** `nombre` es el texto que se quiere usar como nombre.
+- **Retorno:** el mismo nombre, sin cambios.
+- **Errores:** `NombreInvalido` si el nombre no cumple las reglas.
 
 ---
 
 # Grupo App -> Grupo Vida
 
-Vida usa los mismos contratos descritos en **Grupo App -> Grupo Ecosistema**; no hay contratos adicionales. En particular, `CrearEspecie`, `AgregarCriaturas`, `EliminarCriaturas`, `ExtinguirEspecie`, `EliminarEspecie`, `InfoEspecie` y `EspecieExtinguida` son los que tocan a Vida.
+Vida usa los mismos contratos descritos en **Grupo App -> Grupo Ecosistema**; no hay contratos adicionales. En particular, `CrearEspecie`, `AgregarCriaturas`, `EliminarCriaturas`, `ExtinguirEspecie`, `EliminarEspecie`, `InfoEspecie` y `EspecieExtinguida` son los que tocan a Vida. El estado que Vida entrega para guardar incluye a sus especies, criaturas e historial: ver **Formato de guardado** en la sección **Grupo App -> Grupo Ecosistema**.

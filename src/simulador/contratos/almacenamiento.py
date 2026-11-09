@@ -10,19 +10,16 @@ from datetime import datetime
 
 from simulador.contratos.errores import NombreInvalido
 
-# Temporal: pasa a configuracion/app.py cuando exista la configuracion (tarea A-9).
-LARGO_MAXIMO_NOMBRE = 60
 
-
-def validarNombre(nombre: str) -> str:
-    """Comprueba las reglas del nombre: de 1 a 60 caracteres y sin espacios en los extremos.
+def validarNombre(nombre: str, largo_maximo: int) -> str:
+    """Comprueba las reglas del nombre: de 1 a largo_maximo caracteres y sin espacios en los extremos.
 
     Devuelve el mismo nombre o lanza NombreInvalido. Que no se repita (sin distinguir
     mayusculas) lo comprueba cada implementacion de Almacenamiento.
     """
-    if len(nombre) == 0 or len(nombre) > LARGO_MAXIMO_NOMBRE or nombre != nombre.strip():
+    if len(nombre) == 0 or len(nombre) > largo_maximo or nombre != nombre.strip():
         raise NombreInvalido(
-            f"El nombre debe tener de 1 a {LARGO_MAXIMO_NOMBRE} caracteres "
+            f"El nombre debe tener de 1 a {largo_maximo} caracteres "
             "y no puede empezar ni terminar con espacios."
         )
     return nombre
