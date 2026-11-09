@@ -6,14 +6,10 @@ import queue
 import threading
 import time
 
+from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.errores import ErrorSimulador
 from simulador.contratos.instantanea import Instantanea
 from simulador.contratos.motor import Aviso, Comando, Motor
-
-# Valores temporales: pasan a la configuracion en A-9.
-VELOCIDAD_MINIMA = 1
-VELOCIDAD_MAXIMA = 60
-VELOCIDAD_INICIAL = 10
 
 
 class Ejecutor:
@@ -23,7 +19,15 @@ class Ejecutor:
     de esta clase, que nunca esperan al motor.
     """
 
-    def __init__(self, motor: Motor, velocidad: int = VELOCIDAD_INICIAL) -> None:
+    def __init__(
+        self,
+        motor: Motor,
+        velocidad: int | None = None,
+        configuracion: ConfiguracionApp | None = None,
+    ) -> None:
+        self._configuracion = configuracion or ConfiguracionApp()
+        if velocidad is None:
+            velocidad = self._configuracion.velocidad_inicial
         self._validarVelocidad(velocidad)
         self._motor = motor
         self._velocidad = velocidad
@@ -94,12 +98,11 @@ class Ejecutor:
             errores, self._errores = self._errores, []
         return errores
 
-    @staticmethod
-    def _validarVelocidad(velocidad: int) -> None:
-        if not VELOCIDAD_MINIMA <= velocidad <= VELOCIDAD_MAXIMA:
-            raise ValueError(
-                f"La velocidad debe estar entre {VELOCIDAD_MINIMA} y {VELOCIDAD_MAXIMA}"
-            )
+    def _validarVelocidad(self, velocidad: int) -> None:
+        minima = self._configuracion.velocidad_minima
+        maxima = self._configuracion.velocidad_maxima
+        if not minima <= velocidad <= maxima:
+            raise ValueError(f"La velocidad debe estar entre {minima} y {maxima}")
 
     def _aplicarPendientes(self) -> None:
         while True:
