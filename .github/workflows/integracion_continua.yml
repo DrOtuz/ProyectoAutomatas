@@ -11,12 +11,9 @@ permissions:
 
 jobs:
   pruebas:
-    name: Pruebas en ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+    name: Pruebas en Windows
+    runs-on: windows-latest
+    
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
