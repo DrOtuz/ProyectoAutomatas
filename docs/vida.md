@@ -3,22 +3,26 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [App](app.md) 
 
-## Estado actual del repositorio (2026-10-18)
+## Estado actual del repositorio (2026-11-06)
 
-El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
-| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
-| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla (tarea A-11) |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
-| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
-| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
+| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
+| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
+| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`. Las tres pruebas de Vida existentes (RF-37, RF-41 y RF-44) comprueban solo la forma de los contratos |
+| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
+| `requirements.txt` | Incluye ya `hypothesis` y `pytest-cov`, además de `numpy`, `pytest`, `ruff`, `import-linter`, `PySide6`, `pyqtgraph` y `pytest-qt` |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
 
-**Todo lo demás que este documento nombra** (contratos en código, `FakeEngine`, `InMemoryStorage`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+**Lo que este documento nombra y sigue siendo propuesta:** los módulos de `vida/`, las funciones `paso_06` a `paso_10`, la vista del mundo, la serialización, la inspección de criatura, el historial por especie y la paleta. En el código, lo que este documento llama `FakeEngine` e `InMemoryStorage` se llama `MotorFalso` y `AlmacenamientoMemoria`.
 
-**Falta para Vida:** `hypothesis` (pruebas de propiedades) y `pytest-cov` (cobertura, RNF-10) no están en `requirements.txt`. Ver A-11 en `app.md`.
+**Todavía no existen:** `.github/CODEOWNERS` y la corrida nocturna `nocturna.yml`.
 
 ## 1. Propósito y alcance
 
@@ -54,7 +58,7 @@ Fases que le tocan: **F2 Criaturas** (casi todo) y la parte de criaturas de **F3
 - No crea generadores aleatorios: recibe el generador único y sortea siempre en el mismo orden (por `id`).
 - No decide cuándo guardar ni escribe en disco.
 - No dibuja nada ni importa `PySide6`.
-- No escribe números a mano: todo sale de `config/vida.py`.
+- No escribe números a mano: todo sale de `configuracion/vida.py`.
 - No inventa genes, estados ni reglas de dieta (fuera de alcance de la versión 1).
 
 ## 3. Requisitos funcionales asignados
@@ -98,7 +102,7 @@ Los criterios completos están en la [sección 6](especificacion.md#6-requisitos
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows; instalación según el README | Colaborador | A empaqueta y prueba en Windows; E y V no usan código ni rutas específicas de un sistema |
 | RNF-02 | Rendimiento: ≥ 60 ticks/s sin criaturas y ≥ 30 con 1000 | Colaborador | E mide y optimiza el tick y el mapa; V mantiene el presupuesto de los pasos 6 a 10 con el cupo lleno |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Colaborador | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
 | RNF-06 | Configuración única validada al arrancar | Colaborador | A es dueño del cargador, la validación y la prueba de igualdad con el archivo; E y V son dueños de sus secciones |
@@ -124,7 +128,7 @@ Además aplica a todos los RF del subgrupo: **RNF-05** (sorteos en orden estable
 | Inspección de criatura | App | `inspeccionar_criatura(id)`: genes, estado vital, estado del autómata, edad | — | **Propuesta** (RF-20) |
 | Historial por especie | App | Muestras (tick, población, media, mínimo y máximo por estadística) | — | **Propuesta** (RF-46) |
 | Paleta (`contratos/paleta.py`) | App | Índice de color asignado a cada especie | Los 12 colores y los colores de casillas como constantes | **Propuesta** |
-| Configuración | Todos | Sección `config/vida.py` | Cargador y validación de App | Por crear |
+| Configuración | Todos | Sección `configuracion/vida.py` | Cargador y validación de App | Por crear |
 
 **Acuerdos de uso**
 
@@ -160,7 +164,7 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 | # | Tarea | Requisito | Entregable | Depende de | Hecho cuando |
 | --- | --- | --- | --- | --- | --- |
 | V-1 | Estado de la población como arreglos NumPy por campo, ordenados por `id` | RF-38 | `vida/poblacion.py` | E-1 (estructura inicial de `ecosistema/`) | Prueba de ida y vuelta de serialización |
-| V-2 | Crear `config/vida.py` a partir de la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
+| V-2 | Crear `configuracion/vida.py` a partir de la tabla de parámetros de la sección 5 | RNF-06 | Todos los valores de los grupos «Criaturas» y «Especies», con rango | — | La prueba de la configuración compara cada valor con la tabla |
 | V-3 | Coste metabólico como función pura | RF-38 (A.8) | `vida/genes.py` | V-2 | Genes base: 0.12 de saciedad por tick; los cuatro genes ×3: 0.44 (unas 3.7 veces); ×4: 0.72, es decir, 0.018 unidades de alimento por tick (Q-03) |
 | V-4 | Autómata como función de decisión pura, con una prueba por fila de la tabla de prioridades | RF-39 | `vida/automata.py` | V-2 | Incluye el caso: sed baja y comida visible, bebe primero si la hidratación es la menor |
 | V-5 | Mutación pura y pruebas de propiedades | RF-40, RNF-10 | `vida/reproduccion.py` | V-2 | El gen siempre queda entre el piso y el límite técnico; el promedio de muchas crías coincide con el promedio de los padres |
@@ -231,19 +235,19 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene las carpetas vacías `src/simulador/app/`, `ecosistema/` y `vida/` y una carpeta de pruebas vacía, así que **ninguna prueba existe todavía y todo está «Por escribir»**. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.req("RF-xx")`.
+Los módulos son una **propuesta**. La columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las pruebas existentes de estas filas están en `tests/app/` y comprueban los contratos, no la lógica de Vida, que todavía no está implementada (`src/simulador/vida/` solo tiene `__init__.py`). Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`.
 
 | Requisito | Módulo (propuesto) | Prueba | Estado |
 | --- | --- | --- | --- |
 | RF-36 | `vida/automata.py, vida/muerte.py` | `tests/vida/test_huida_fuego.py` | Por escribir |
-| RF-37 | `vida/especies.py` | `tests/vida/test_crear_especie.py` | Por escribir |
+| RF-37 | `vida/especies.py` | `tests/app/test_contratos_comandos.py`<br>por escribir: tests/vida/test_crear_especie.py | Parcial |
 | RF-38 | `vida/genes.py, vida/poblacion.py` | `tests/vida/test_genes_y_estado.py` | Por escribir |
 | RF-39 | `vida/automata.py` | `tests/vida/test_automata.py` | Por escribir |
 | RF-40 | `vida/reproduccion.py` | `tests/vida/test_reproduccion.py` | Por escribir |
-| RF-41 | `vida/reproduccion.py, vida/especies.py` | `tests/vida/test_cupo.py` | Por escribir |
+| RF-41 | `vida/reproduccion.py, vida/especies.py` | `tests/app/test_contratos_avisos.py`<br>por escribir: tests/vida/test_cupo.py | Parcial |
 | RF-42 | `vida/especies.py` | `tests/vida/test_agregar_criaturas.py` | Por escribir |
 | RF-43 | `vida/especies.py` | `tests/vida/test_eliminar_criaturas.py` | Por escribir |
-| RF-44 | `vida/especies.py` | `tests/vida/test_extinguir.py` | Por escribir |
+| RF-44 | `vida/especies.py` | `tests/app/test_contratos_avisos.py`<br>por escribir: tests/vida/test_extinguir.py | Parcial |
 | RF-45 | `vida/especies.py` | `tests/vida/test_eliminar_especie.py` | Por escribir |
 | RF-47 | `vida/muerte.py` | `tests/vida/test_muerte.py` | Por escribir |
 | RF-52 | `vida/especies.py` | `tests/vida/test_limite_especies.py` | Por escribir |

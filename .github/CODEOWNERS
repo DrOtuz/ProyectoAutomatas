@@ -1,0 +1,36 @@
+# Quien debe revisar cada cambio. Gana la ultima regla que coincide:
+# por eso la regla general va primero y las especificas despues.
+# Lideres: App = @Juan-var-camp, Ecosistema = @MrMishaelysium, Vida = @DrOtuz.
+
+# Por defecto, App (plataforma)
+*                                           @Juan-var-camp
+
+# App
+/src/simulador/app/                         @Juan-var-camp
+/src/simulador/configuracion/               @Juan-var-camp
+/tests/app/                                 @Juan-var-camp
+/docs/app.md                                @Juan-var-camp
+/.github/                                   @Juan-var-camp
+/scripts/                                   @Juan-var-camp
+/README.md                                  @Juan-var-camp
+/pyproject.toml                             @Juan-var-camp
+/requirements.txt                           @Juan-var-camp
+
+# Ecosistema 
+/src/simulador/ecosistema/                  @MrMishaelysium
+/src/simulador/configuracion/ecosistema.py  @MrMishaelysium
+/tests/ecosistema/                          @MrMishaelysium
+/docs/ecosistema.md                         @MrMishaelysium
+
+# Vida 
+/src/simulador/vida/                        @DrOtuz
+/src/simulador/configuracion/vida.py        @DrOtuz
+/tests/vida/                                @DrOtuz
+/docs/vida.md                               @DrOtuz
+
+# Compartido: contratos y fuente de verdad (los tres lideres)
+/src/simulador/contratos/                   @Juan-var-camp @DrOtuz @MrMishaelysium
+/docs/contratos.md                          @Juan-var-camp @DrOtuz @MrMishaelysium
+/docs/especificacion.md                     @Juan-var-camp @DrOtuz @MrMishaelysium
+/docs/pruebas-y-trazabilidad.md             @Juan-var-camp @DrOtuz @MrMishaelysium
+/.github/CODEOWNERS                         @Juan-var-camp @DrOtuz @MrMishaelysium

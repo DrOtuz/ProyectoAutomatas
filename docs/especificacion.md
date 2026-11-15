@@ -8,22 +8,26 @@ Este documento es la especificacion definitiva del proyecto. Los valores numéri
 
 El objetivo es una aplicación de escritorio en Python que simula un ecosistema en un mapa de 100×100 casillas. El mapa evoluciona como autómata celular (terreno, vegetación y fuego) y sobre él viven criaturas que funcionan como autómatas de estados finitos, se reproducen y mutan. El usuario observa, interviene y analiza la simulación en tiempo real.
 
-### Estado actual del repositorio (2026-10-18)
+### Estado actual del repositorio (2026-11-06)
 
-El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
-| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
-| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla  |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
-| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
-| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
+| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
+| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
+| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
+| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
+| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
 
-**Todo lo demás que este documento nombra** (contratos en código, `MotorFalso`, `AlmacenamientoMemoria`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+**Lo que este documento nombra y todavía no existe:** la interfaz, el motor real de Ecosistema, la lógica de Vida, la prueba de oro, `.github/CODEOWNERS` y la corrida nocturna `nocturna.yml`. Los contratos en código, `MotorFalso`, `AlmacenamientoMemoria`, la configuración, la CI y la plantilla de PR ya existen.
 
-**Dependencias pendientes frente a esta especificación:** D-02 pide PySide6 y pyqtgraph, y las pruebas (secciones 6 y 9) piden `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`; ninguno está en `requirements.txt`, que hoy incluye `matplotlib`. Decisión del 2026-10-18: se mantiene D-02; las dependencias se agregan en la tarea A-11 de `app.md` y matplotlib queda solo para scripts de análisis, no para la interfaz.
+**Dependencias frente a esta especificación:** D-02 (PySide6 y pyqtgraph) y las que piden las pruebas (secciones 6 y 9: `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`) ya están en `requirements.txt` (tarea A-11). Decisión del 2026-10-18: se mantiene D-02; matplotlib queda solo para scripts de análisis, no para la interfaz.
 
 ## 2. Glosario y modelo de dominio
 
@@ -585,7 +589,7 @@ Los documentos de origen no fijaban plataforma, rendimiento ni arquitectura; est
 
 | ID | Requisito | Criterio de aceptación |
 | --- | --- | --- |
-| RNF-01 | Plataforma | Corre con Python 3.11 o superior en Windows 10 o superior, macOS 13 o superior y Ubuntu 22.04 o superior. Se instala con los comandos de la guía del README (`pip install -r requirements.txt` y `pip install -e .`) y arranca sin configuración extra. |
+| RNF-01 | Plataforma | Corre con Python 3.11 o superior en Windows 10 o superior. Se instala con los comandos de la guía del README (`pip install -r requirements.txt` y `pip install -e .`) y arranca sin configuración extra. |
 | RNF-02 | Rendimiento del motor | Sin interfaz y en el equipo de referencia, el motor ejecuta al menos 60 ticks por segundo sin criaturas y al menos 30 con el cupo inicial de 1000 criaturas. Si no alcanza la velocidad pedida, la interfaz muestra la velocidad efectiva. Si las pruebas lo exigen, se ajusta el cupo (D-31). |
 | RNF-03 | Fluidez de la interfaz | La ventana se redibuja a 30 FPS o más y no se congela, porque el motor corre en un hilo o proceso aparte. |
 | RNF-04 | Motor separado de la interfaz | El paquete del motor no importa nada de PySide6; una prueba ejecuta 1000 ticks sin cargarlo. |

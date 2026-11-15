@@ -23,7 +23,9 @@ Descripción: Simulador de evolución de criaturas en un ecosistema.
 
 ## Sobre acuerdos entre subgrupos
 
-En la carpeta docs hay un documento llamado 'contratos.md' en el que se definirá qué funciones y atributos ofrece cada subgrupo a los demás.
+En la carpeta `docs` se encuentran los acuerdos técnicos y estándares del proyecto:
+- **`docs/contratos.md`:** define las funciones, métodos y atributos que cada subgrupo ofrece a los demás.
+- **`docs/guia-de-calidad.md`:** estándares de código, pruebas, arquitectura y flujo de Git para todo el equipo.
 
 ## Sobre las ramas de desarrollo
 - **main**
@@ -47,8 +49,8 @@ En la carpeta docs hay un documento llamado 'contratos.md' en el que se definir�
 - `git checkout -b feature/subgrupo-tarea`
 
 3. Programar, y guardar cambios en commits pequeños
-- `git add .`
-- `git commit -m "descripción"`
+- `git add <archivos>`
+- `git commit -m "tipo(subgrupo): descripción"`
 
 4. Subir tu rama
 - `git push -u origin feature/subgrupo-tarea`
@@ -145,6 +147,7 @@ git checkout -b feature/<subgrupo>-<tarea>
 ```
 
 Ejemplo: `feature/vida-reproduccion`.
+
 
 ### Qué se repite y qué no
 

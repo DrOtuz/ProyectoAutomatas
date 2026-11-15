@@ -3,22 +3,26 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Vida](vida.md) · [App](app.md) 
 
-## Estado actual del repositorio (2026-10-18)
+## Estado actual del repositorio (2026-11-06)
 
-El proyecto apenas empieza: hay estructura, documentos y configuración, **pero ningún código ni pruebas**.
+El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los cinco documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `vida.md`) |
-| `src/simulador/app/`, `ecosistema/`, `vida/` | Carpetas vacías |
-| Pruebas | Carpeta vacía. `pyproject.toml` apunta a `tests/`; si la carpeta del repositorio se llama `test/`, hay que renombrarla (tarea A-11) |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo `import simulador.app, simulador.ecosistema, simulador.vida` |
-| `requirements.txt` | `numpy>=1.26`, `matplotlib>=3.8`, `pytest>=8.0`, `ruff>=0.5` |
-| `pyproject.toml` | Paquete `simulador` 0.1.0, Python ≥ 3.11, pytest sobre `tests/`, ruff con línea de 100 |
+| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
+| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
+| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
+| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
+| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
+| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
 
-**Todo lo demás que este documento nombra** (contratos en código, `FakeEngine`, `InMemoryStorage`, configuración, CI, scripts, etiquetas, `CODEOWNERS`, pruebas, prueba de oro) **es una propuesta por crear**. Versiones anteriores lo describían como existente; no lo está.
+**Lo que este documento nombra y sigue siendo propuesta:** los módulos de `ecosistema/` (`nucleo/`, `estado/`, reloj, vegetación, eventos y fuego), la prueba de oro, la vista del mundo, la ranura de los pasos 6 a 10, la serialización y la inspección de casilla. En el código, lo que este documento llama `FakeEngine` e `InMemoryStorage` se llama `MotorFalso` y `AlmacenamientoMemoria`.
 
-**Falta para Ecosistema:** `hypothesis` (pruebas de propiedades), `pytest-cov` (cobertura ≥ 80 %, RNF-10) e `import-linter` (regla de importación, RNF-04) no están en `requirements.txt`. Ver A-11 en `app.md`.
+**Para Ecosistema:** `hypothesis`, `pytest-cov` e `import-linter` ya están en `requirements.txt`, y la regla de importación (RNF-04) ya corre en la CI con `lint-imports`. Todavía no existen `.github/CODEOWNERS` ni la corrida nocturna `nocturna.yml`.
 
 ## 1. Propósito y alcance
 
@@ -50,7 +54,7 @@ Fases que le tocan: **F1 Mundo vivo** (estaciones, vegetación, alimento) y **F3
 
 - No decide el comportamiento de las criaturas ni modifica la población. Los efectos del fuego sobre las criaturas (RF-36, RF-47) los resuelve **Vida** leyendo el mundo.
 - No escribe en disco ni importa `PySide6` ni el paquete `app` (regla de importación).
-- No escribe números a mano: todo parámetro sale de `config/ecosistema.py` (RNF-06).
+- No escribe números a mano: todo parámetro sale de `configuracion/ecosistema.py` (RNF-06).
 - No cambia un contrato sin RFC aprobada por los tres líderes.
 - **Única excepción de escritura ajena:** en el paso 7, Vida descuenta 1 unidad de `alimento` de la casilla que come. Ecosistema no lo hace ni lo impide **(propuesta; ver sección 5)**.
 
@@ -103,7 +107,7 @@ Los criterios completos están en la [sección 6](especificacion.md#6-requisitos
 
 | ID | Requisito | Rol del subgrupo | Reparto |
 | --- | --- | --- | --- |
-| RNF-01 | Plataforma: Python 3.11 o superior en Windows, macOS y Ubuntu; instalación según el README | Colaborador | A empaqueta y prueba en los tres sistemas; E y V no usan código ni rutas específicas de un sistema |
+| RNF-01 | Plataforma: Python 3.11 o superior en Windows; instalación según el README | Colaborador | A empaqueta y prueba en Windows; E y V no usan código ni rutas específicas de un sistema |
 | RNF-02 | Rendimiento: ≥ 60 ticks/s sin criaturas y ≥ 30 con 1000 | Responsable | E mide y optimiza el tick y el mapa; V mantiene el presupuesto de los pasos 6 a 10 con el cupo lleno |
 | RNF-04 | Motor separado de la interfaz (no importa PySide6) | Responsable | E mantiene limpio el paquete del motor; A mantiene la regla de importación en la CI |
 | RNF-05 | Reproducibilidad: misma semilla y acciones, mismo estado a 5000 ticks | Responsable | E es dueño del generador único, del orden del tick y de la prueba de oro; V sortea en orden estable; A guarda el estado del generador |
@@ -129,7 +133,7 @@ Los contratos se documentan en `docs/contratos.md` y, cuando se implementen, viv
 | Vista del mundo (`ecosistema/estado/mundo.py`) | Vida | Solo lectura: `terreno`, `alimento`, `llamas`, `temperatura`, `estacion`; escritura única `tomar_alimento(x, y)` | — | **Propuesta** |
 | Serialización | App, Vida | `to_state` ensambla mapa, clima, eventos y generador; pide a Vida su sección | De Vida: bytes de especies, criaturas e historial | **Propuesta** |
 | Inspección de casilla | App | `inspeccionar_casilla(x, y)`: estado, humedad, alimento, contador | — | **Propuesta** (RF-20 no cabe hoy en el snapshot) |
-| Configuración | Todos | Sección `config/ecosistema.py` | Cargador y validación de App | Por crear |
+| Configuración | Todos | Sección `configuracion/ecosistema.py` | Cargador y validación de App | Por crear |
 
 **Acuerdos de uso**
 
@@ -232,7 +236,7 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3). Cada tar
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene las carpetas vacías `src/simulador/app/`, `ecosistema/` y `vida/` y una carpeta de pruebas vacía, así que **ninguna prueba existe todavía y todo está «Por escribir»**. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.req("RF-xx")`.
+Los módulos son una **propuesta**. La columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las pruebas existentes de estas filas están en `tests/app/` y comprueban los contratos y el `MotorFalso`, no el motor real de Ecosistema, que todavía no está implementado (`src/simulador/ecosistema/` solo tiene `__init__.py`). Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`.
 
 | Requisito | Módulo (propuesto) | Prueba | Estado |
 | --- | --- | --- | --- |
@@ -244,16 +248,16 @@ Los módulos y las pruebas son una **propuesta**: hoy el repositorio solo tiene 
 | RF-26 | `ecosistema/vegetacion.py` | `tests/ecosistema/test_regeneracion.py` | Por escribir |
 | RF-56 | `ecosistema/vegetacion.py` | `tests/ecosistema/test_retroceso.py` | Por escribir |
 | RF-27 | `ecosistema/eventos.py` | `tests/ecosistema/test_eventos.py` | Por escribir |
-| RF-28 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/ecosistema/test_eventos.py`<br>`tests/app/test_ventana.py` | Por escribir |
+| RF-28 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_contratos_comandos.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py, tests/app/test_ventana.py | Parcial |
 | RF-29 | `ecosistema/eventos.py` | `tests/ecosistema/test_reloj.py` | Por escribir |
 | RF-30 | `ecosistema/eventos.py` | `tests/ecosistema/test_lluvia.py` | Por escribir |
-| RF-31 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/ecosistema/test_eventos.py` | Por escribir |
-| RF-51 | `ecosistema/eventos.py, app/ui/ventana/panel_eventos.py` | `tests/ecosistema/test_eventos.py` | Por escribir |
+| RF-31 | `ecosistema/eventos.py, app/ui/ventana/` | `tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
+| RF-51 | `ecosistema/eventos.py, app/ui/ventana/panel_eventos.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
 | RF-32 | `ecosistema/fuego.py, app/ui/mapa_widget.py` | `tests/ecosistema/test_fuego_inicio.py` | Por escribir |
 | RF-33 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_propagacion.py` | Por escribir |
 | RF-34 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_extincion.py` | Por escribir |
 | RF-35 | `ecosistema/fuego.py` | `tests/ecosistema/test_fuego_efectos.py` | Por escribir |
 | RNF-02 | `ecosistema/nucleo/, vida/` | `tests/bench/test_rendimiento.py`<br>por escribir: tests/bench/test_rendimiento_1000.py | Por escribir |
 | RNF-04 | `ecosistema/, vida/, pyproject.toml (import-linter)` | `tests/app/test_reglas_de_codigo.py` | Por escribir |
-| RNF-05 | `ecosistema/nucleo/` | `tests/ecosistema/test_determinismo.py`<br>`tests/ecosistema/test_golden.py`<br>`tests/app/test_reglas_de_codigo.py` | Por escribir |
+| RNF-05 | `ecosistema/nucleo/` | `tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_determinismo.py, tests/ecosistema/test_golden.py, tests/app/test_reglas_de_codigo.py | Parcial |
 | RNF-10 | `tests/` | por escribir: tests/ecosistema/test_propiedades_mundo.py, tests/vida/test_propiedades_vida.py | Por escribir |

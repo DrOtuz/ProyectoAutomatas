@@ -3,6 +3,7 @@
 from dataclasses import replace
 from datetime import datetime
 
+from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento, ResumenSimulacion, validarNombre
 from simulador.contratos.errores import NombreInvalido, SimulacionNoEncontrada
 
@@ -10,13 +11,14 @@ from simulador.contratos.errores import NombreInvalido, SimulacionNoEncontrada
 class AlmacenamientoMemoria(Almacenamiento):
     """Biblioteca de simulaciones que vive solo mientras el programa esta abierto."""
 
-    def __init__(self):
+    def __init__(self, configuracion: ConfiguracionApp | None = None) -> None:
+        self._configuracion = configuracion if configuracion is not None else ConfiguracionApp()
         self._resumenes: dict[int, ResumenSimulacion] = {}
         self._estados: dict[int, bytes] = {}
         self._siguiente_id = 1
 
     def crear(self, nombre: str, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion:
-        validarNombre(nombre)
+        validarNombre(nombre, self._configuracion.largo_maximo_nombre)
         self._comprobarNombreLibre(nombre)
         resumen = ResumenSimulacion(
             simulacion_id=self._siguiente_id,
@@ -48,7 +50,7 @@ class AlmacenamientoMemoria(Almacenamiento):
 
     def renombrar(self, simulacion_id: int, nombre: str) -> ResumenSimulacion:
         actual = self._obtener(simulacion_id)
-        validarNombre(nombre)
+        validarNombre(nombre, self._configuracion.largo_maximo_nombre)
         self._comprobarNombreLibre(nombre, excepto_id=simulacion_id)
         resumen = replace(actual, nombre=nombre)
         self._resumenes[simulacion_id] = resumen
