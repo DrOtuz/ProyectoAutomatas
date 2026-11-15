@@ -5,12 +5,11 @@ from simulador.app.interfaz.dialogos import (
     confirmarMapaSinAgua,
     mostrarSimulacionNoEncontrada,
 )
-from simulador.app.interfaz.ventana_inicio import VentanaInicio
+from simulador.app.interfaz.ventana.ventana_simulacion import VentanaSimulacion
 
 __all__ = [
-    "VentanaInicio",
+    "VentanaSimulacion",
     "confirmarEliminarSimulacion",
     "confirmarMapaSinAgua",
     "mostrarSimulacionNoEncontrada",
 ]
-
