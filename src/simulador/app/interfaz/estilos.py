@@ -37,4 +37,3 @@ def construirTablaColoresTerreno() -> np.ndarray:
     for estado, rgb in COLORES_TERRENO_RGB.items():
         lut[int(estado)] = rgb
     return lut
-
