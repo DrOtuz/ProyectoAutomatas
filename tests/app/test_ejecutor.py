@@ -1,7 +1,9 @@
+import threading
 import time
 
 import pytest
 
+from simulador.app.almacenamiento.memoria import AlmacenamientoMemoria
 from simulador.app.ejecutor.ejecutor import Ejecutor
 from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.comandos import FijarNutrientes
@@ -150,3 +152,97 @@ def test_detener_termina_el_hilo(crearEjecutor):
     assert ejecutor.activo
     ejecutor.detener()
     assert not ejecutor.activo
+
+
+@pytest.mark.requisito("RF-48")
+def test_autoguardado_al_pausar():
+    almacenamiento = AlmacenamientoMemoria()
+    motor = MotorFalso()
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    ejecutor = Ejecutor(
+        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+    )
+    ejecutor.iniciar()
+    ejecutor.reanudar()
+    assert esperarHasta(lambda: ejecutor.obtenerInstantanea().tick >= 3)
+    ejecutor.pausar()
+    assert esperarHasta(
+        lambda: almacenamiento.cargar(resumen.simulacion_id) is not None
+        and ejecutor.ultimo_tick_guardado >= 3
+    )
+    ejecutor.detener()
+
+
+@pytest.mark.requisito("RF-48")
+def test_autoguardado_al_detener():
+    almacenamiento = AlmacenamientoMemoria()
+    motor = MotorFalso()
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    ejecutor = Ejecutor(
+        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+    )
+    ejecutor.iniciar()
+    ejecutor.reanudar()
+    assert esperarHasta(lambda: ejecutor.obtenerInstantanea().tick >= 3)
+    tick_al_parar = ejecutor.obtenerInstantanea().tick
+    ejecutor.detener()
+    assert ejecutor.ultimo_tick_guardado >= tick_al_parar
+
+
+@pytest.mark.requisito("RF-48")
+def test_autoguardado_periodico_cada_n_ticks():
+    configuracion = ConfiguracionApp(autoguardado_cada_ticks=4)
+    almacenamiento = AlmacenamientoMemoria()
+    motor = MotorFalso()
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    ejecutor = Ejecutor(
+        motor,
+        velocidad=60,
+        configuracion=configuracion,
+        almacenamiento=almacenamiento,
+        simulacion_id=resumen.simulacion_id,
+    )
+    ejecutor.iniciar()
+    ejecutor.reanudar()
+    assert esperarHasta(lambda: ejecutor.ultimo_tick_guardado >= 4)
+    ejecutor.detener()
+
+
+@pytest.mark.requisito("RF-48")
+def test_solicitar_guardado_manual():
+    almacenamiento = AlmacenamientoMemoria()
+    motor = MotorFalso()
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    ejecutor = Ejecutor(
+        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+    )
+    ejecutor.iniciar()
+    ejecutor.solicitarGuardado()
+    assert esperarHasta(lambda: ejecutor.ultimo_tick_guardado == 0)
+    ejecutor.detener()
+
+
+class MotorConRastreoDeHilo(MotorFalso):
+    def __init__(self):
+        super().__init__()
+        self.hilo_a_estado = None
+
+    def aEstado(self) -> bytes:
+        self.hilo_a_estado = threading.current_thread().name
+        return super().aEstado()
+
+
+@pytest.mark.requisito("RF-48")
+def test_a_estado_solo_se_llama_desde_el_hilo_del_ejecutor():
+    almacenamiento = AlmacenamientoMemoria()
+    motor = MotorConRastreoDeHilo()
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    motor.hilo_a_estado = None  # resetear tras crear
+    ejecutor = Ejecutor(
+        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+    )
+    ejecutor.iniciar()
+    ejecutor.solicitarGuardado()
+    assert esperarHasta(lambda: motor.hilo_a_estado is not None)
+    assert motor.hilo_a_estado == "ejecutor"
+    ejecutor.detener()
