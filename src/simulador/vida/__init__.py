@@ -4,6 +4,7 @@ from .config import ConfigVida
 from .criatura import Criatura
 from .especie import Especie
 from .estadisticas import Estadisticas
+from .historial import GestorHistorial, HistorialEspecie
 from .poblacion import EventoVida, Poblacion
 from .tipos import (
     CausaMuerte,
@@ -23,6 +24,8 @@ __all__ = [
     "Criatura",
     "Dieta",
     "Especie",
+    "GestorHistorial",
+    "HistorialEspecie",
     "Estadisticas",
     "EventoVida",
     "Poblacion",
