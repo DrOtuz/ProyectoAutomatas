@@ -342,6 +342,18 @@ def test_histeresis_de_la_intencion():
     assert c.actualizar_intencion() == INTENCION_PAREJA
 
 
+def test_quiere_pareja_es_una_consulta_pura_con_la_misma_histeresis():
+    c = herbivoro(energia=69.0)
+    assert not c.quiere_pareja()
+    c.energia = 70.0
+    assert c.quiere_pareja() and c.intencion == INTENCION_ALIMENTO  # no la cambia
+    c.intencion = INTENCION_PAREJA
+    c.energia = 55.0
+    assert c.quiere_pareja()
+    c.energia = 49.0
+    assert not c.quiere_pareja()
+
+
 def test_los_umbrales_siguen_a_e_max():
     cfg = CFG.con(E_MAX=200.0)
     c = herbivoro(energia=139.0, cfg=cfg)

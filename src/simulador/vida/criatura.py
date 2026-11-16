@@ -261,6 +261,16 @@ class Criatura:
             self.intencion = INTENCION_ALIMENTO
         return self.intencion
 
+    def quiere_pareja(self) -> bool:
+        """Si buscaria pareja en este momento (consulta pura: no cambia `intencion`).
+
+        La intencion solo se actualiza en el turno de la propia criatura; esto
+        permite a otra saber si esta quiere pareja aunque aun no le toque jugar.
+        """
+        if self.intencion == INTENCION_PAREJA:
+            return not self.en_umbral_salida()
+        return self.en_umbral_reproduccion()
+
     def puede_pagar_reproduccion(self) -> bool:
         """Le alcanza la energia para pagar el costo y seguir viva."""
         return self.energia > self.cfg.COSTO_REPRODUCCION
