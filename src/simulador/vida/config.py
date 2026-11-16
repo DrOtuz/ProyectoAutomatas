@@ -19,19 +19,19 @@ from .tipos import Dieta
 
 
 def _eta_planta_defecto() -> dict[Dieta, float]:
-    return {Dieta.HERBIVORO: 0.50, Dieta.CARNIVORO: 0.0, Dieta.OMNIVORO: 0.35}
+    return {Dieta.HERBIVORO: 0.60, Dieta.CARNIVORO: 0.0, Dieta.OMNIVORO: 0.20}
 
 
 def _eta_carne_defecto() -> dict[Dieta, float]:
-    return {Dieta.HERBIVORO: 0.0, Dieta.CARNIVORO: 0.80, Dieta.OMNIVORO: 0.60}
+    return {Dieta.HERBIVORO: 0.0, Dieta.CARNIVORO: 0.70, Dieta.OMNIVORO: 0.40}
 
 
 def _plantillas_defecto() -> dict[Dieta, tuple[float, float, float]]:
     # (tamano S, velocidad V, vision R)
     return {
-        Dieta.HERBIVORO: (1.0, 1.0, 4.0),
-        Dieta.OMNIVORO: (1.5, 1.2, 5.0),
-        Dieta.CARNIVORO: (2.5, 1.6, 6.0),
+        Dieta.HERBIVORO: (1.0, 2.0, 7.0),
+        Dieta.OMNIVORO: (1.3, 1.5, 5.0),
+        Dieta.CARNIVORO: (1.6, 1.0, 4.0),
     }
 
 

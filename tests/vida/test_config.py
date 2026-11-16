@@ -18,11 +18,14 @@ def test_valores_por_defecto_son_los_del_documento():
     assert cfg.SIGMA == 0.05
     assert cfg.MAX_CRIATURAS == 1000
     assert cfg.MAX_POR_CASILLA == 1
-    assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.50
-    assert cfg.ETA_PLANTA[Dieta.OMNIVORO] == 0.35
-    assert cfg.ETA_CARNE[Dieta.CARNIVORO] == 0.80
-    assert cfg.ETA_CARNE[Dieta.OMNIVORO] == 0.60
-    assert cfg.PLANTILLAS[Dieta.CARNIVORO] == (2.5, 1.6, 6.0)
+    # eficiencias y plantillas: valores calibrados por el equipo (no los del v0.1)
+    assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.60
+    assert cfg.ETA_PLANTA[Dieta.OMNIVORO] == 0.20
+    assert cfg.ETA_CARNE[Dieta.CARNIVORO] == 0.70
+    assert cfg.ETA_CARNE[Dieta.OMNIVORO] == 0.40
+    assert cfg.PLANTILLAS[Dieta.HERBIVORO] == (1.0, 2.0, 7.0)
+    assert cfg.PLANTILLAS[Dieta.OMNIVORO] == (1.3, 1.5, 5.0)
+    assert cfg.PLANTILLAS[Dieta.CARNIVORO] == (1.6, 1.0, 4.0)
     assert cfg.VEJEZ_ACTIVA is True and cfg.VIDA_BASE == 1500
 
 
@@ -113,7 +116,7 @@ def test_desde_dict_ignora_claves_desconocidas_y_usa_defaults():
 
 
 def test_desde_dict_completa_dietas_faltantes_con_los_defaults():
-    cfg = ConfigVida.desde_dict({"ETA_PLANTA": {"herbivoro": 0.6}})
-    assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.6
-    assert cfg.ETA_PLANTA[Dieta.OMNIVORO] == 0.35
+    cfg = ConfigVida.desde_dict({"ETA_PLANTA": {"herbivoro": 0.4}})
+    assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.4
+    assert cfg.ETA_PLANTA[Dieta.OMNIVORO] == 0.20
     cfg.validar()

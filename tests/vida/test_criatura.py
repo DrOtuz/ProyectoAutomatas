@@ -14,7 +14,7 @@ from simulador.vida.tipos import (
     Estado,
 )
 
-CFG = ConfigVida()
+from valores_doc import CFG_DOC as CFG
 _ids = iter(range(1, 10_000))
 
 

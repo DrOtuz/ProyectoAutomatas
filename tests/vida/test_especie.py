@@ -6,7 +6,7 @@ from simulador.vida.especie import Especie
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.tipos import Dieta, EstadoEspecie
 
-CFG = ConfigVida()
+from valores_doc import CFG_DOC as CFG
 
 
 def especie(nombre="conejo", dieta=Dieta.HERBIVORO):

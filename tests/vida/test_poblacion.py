@@ -17,7 +17,7 @@ from simulador.vida.poblacion import (
 )
 from simulador.vida.tipos import CausaMuerte, Dieta, EstadoEspecie
 
-CFG = ConfigVida()
+from valores_doc import CFG_DOC as CFG
 H, O, C = Dieta.HERBIVORO, Dieta.OMNIVORO, Dieta.CARNIVORO
 
 

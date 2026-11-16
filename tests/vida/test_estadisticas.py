@@ -10,7 +10,7 @@ from simulador.vida.config import ConfigVida
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.tipos import Dieta
 
-CFG = ConfigVida()
+from valores_doc import CFG_DOC as CFG
 
 
 # --- validacion e inmutabilidad -----------------------------------------------
