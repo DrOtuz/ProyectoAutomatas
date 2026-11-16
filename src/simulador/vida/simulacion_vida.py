@@ -36,16 +36,19 @@ INICIALES = {"conejo": 120, "zorro": 40, "lobo": 20}
 class Simulacion:
     """Un mapa, una poblacion y su historial, avanzando juntos."""
 
-    def __init__(self, pob: Poblacion, mapa: MapaFalso, historial: GestorHistorial) -> None:
+    def __init__(self, pob: Poblacion, mapa: MapaFalso) -> None:
         self.pob = pob
         self.mapa = mapa
-        self.historial = historial
+
+    @property
+    def historial(self) -> GestorHistorial:
+        """Las series que Poblacion va llenando en cada tick."""
+        return self.pob.historial
 
     def avanzar(self, temperatura: float | None = None) -> None:
         t = self.pob.cfg.TEMPERATURA_POR_DEFECTO if temperatura is None else temperatura
         self.mapa.regenerar()
         self.pob.actualizar(self.mapa, t)
-        self.historial.registrar(self.pob.tick, self.pob.snapshot())
 
     def vivas_por_dieta(self) -> dict[str, bool]:
         snap = self.pob.snapshot()
@@ -84,7 +87,7 @@ def crear_escenario(
     pob = Poblacion(cfg, Random(semilla))
     for nombre, dieta in ESPECIES_ESCENARIO.items():
         pob.crear_especie(nombre, dieta, iniciales[nombre], mapa)
-    return Simulacion(pob, mapa, GestorHistorial())
+    return Simulacion(pob, mapa)
 
 
 def correr(
