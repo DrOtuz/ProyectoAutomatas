@@ -12,8 +12,9 @@ El metabolismo se cobra DESPUES de actuar porque el costo de moverse depende de
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from random import Random
-from typing import Any, Callable, Mapping
+from typing import Any
 
 from .config import ConfigVida
 from .estadisticas import Estadisticas
@@ -80,7 +81,7 @@ class Criatura:
         self.causa_muerte: CausaMuerte | None = None
         # Aviso opcional al morir (lo pone Poblacion para llevar la cuenta y los
         # eventos al instante). No se guarda.
-        self.al_morir: Callable[["Criatura"], None] | None = None
+        self.al_morir: Callable[[Criatura], None] | None = None
 
     # --- creacion ---------------------------------------------------------------
 
@@ -106,7 +107,7 @@ class Criatura:
         cfg: ConfigVida,
         rng: Random,
         energia: float | None = None,
-    ) -> "Criatura":
+    ) -> Criatura:
         """Crea una criatura recien nacida (sortea su vida maxima)."""
         vida_max = cls.calcular_vida_max(stats, cfg, rng)
         return cls(id, especie, dieta, stats, pos, cfg, vida_max, energia)
@@ -187,7 +188,7 @@ class Criatura:
     def puede_comer_planta(self) -> bool:
         return self.dieta.come_plantas
 
-    def puede_cazar(self, otra: "Criatura") -> bool:
+    def puede_cazar(self, otra: Criatura) -> bool:
         """Presa elegible: otra especie, viva, y S_propia >= RATIO * S_presa."""
         return (
             self.viva
@@ -198,7 +199,7 @@ class Criatura:
             >= self.cfg.RATIO_DEPREDACION * otra.stats.tamano - 1e-12
         )
 
-    def es_amenaza_para(self, otra: "Criatura") -> bool:
+    def es_amenaza_para(self, otra: Criatura) -> bool:
         """True si `self` es una amenaza para `otra` (es decir, podria cazarla).
 
         Un herbivoro grande no es amenaza: no come carne.
@@ -209,7 +210,7 @@ class Criatura:
         """% de energia que daria comer `biomasa_u` de planta (no modifica nada)."""
         return self.eficiencia_planta() * biomasa_u / self.stats.tamano
 
-    def ganancia_presa(self, presa: "Criatura") -> float:
+    def ganancia_presa(self, presa: Criatura) -> float:
         """% de energia que daria comerse a `presa` completa (no modifica nada).
 
         ganancia = ETA * masa_presa / S = 100 * ETA * S_presa / S_depredador
@@ -232,7 +233,7 @@ class Criatura:
             raise ValueError("biomasa_u debe ser >= 0")
         return self._sumar_energia(self.ganancia_planta(biomasa_u))
 
-    def comer_presa(self, presa: "Criatura") -> float:
+    def comer_presa(self, presa: Criatura) -> float:
         """Se come a la presa completa (no hay mordida) y la mata por DEPREDACION.
 
         Devuelve la energia realmente ganada.
@@ -320,7 +321,7 @@ class Criatura:
         }
 
     @classmethod
-    def desde_dict(cls, datos: Mapping[str, Any], cfg: ConfigVida) -> "Criatura":
+    def desde_dict(cls, datos: Mapping[str, Any], cfg: ConfigVida) -> Criatura:
         c = cls(
             id=datos["id"],
             especie=datos["especie"],

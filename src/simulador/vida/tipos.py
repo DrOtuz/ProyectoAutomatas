@@ -6,7 +6,7 @@ Criatura), asi que cualquier otro modulo puede importarlo sin ciclos.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:  # solo para anotaciones; evita un ciclo de importacion
     from .criatura import Criatura
@@ -84,6 +84,6 @@ class Objetivo(NamedTuple):
 
     tipo: TipoObjetivo
     pos: Pos
-    criatura: Optional["Criatura"] = None
+    criatura: Criatura | None = None
     ganancia: float = 0.0
     distancia: int = 0

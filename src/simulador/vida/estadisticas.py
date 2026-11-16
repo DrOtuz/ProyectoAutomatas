@@ -14,9 +14,10 @@ mutacion es proporcional al valor del rasgo.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from random import Random
-from typing import Any, Mapping
+from typing import Any
 
 from .config import ConfigVida
 from .tipos import Dieta
@@ -46,7 +47,7 @@ class Estadisticas:
         for nombre in _RASGOS:
             valor = getattr(self, nombre)
             if isinstance(valor, bool) or not isinstance(valor, (int, float)):
-                raise ValueError(f"{nombre} debe ser un numero, no {valor!r}")
+                raise TypeError(f"{nombre} debe ser un numero, no {valor!r}")
             if not math.isfinite(valor) or valor <= 0:
                 raise ValueError(f"{nombre} debe ser finito y > 0, no {valor!r}")
             object.__setattr__(self, nombre, float(valor))
@@ -54,7 +55,7 @@ class Estadisticas:
     # --- creacion ---------------------------------------------------------------
 
     @classmethod
-    def desde_plantilla(cls, dieta: Dieta, cfg: ConfigVida, rng: Random) -> "Estadisticas":
+    def desde_plantilla(cls, dieta: Dieta, cfg: ConfigVida, rng: Random) -> Estadisticas:
         """Estadisticas de una criatura inicial de la especie.
 
         Toma S, V y R de la plantilla de la dieta y multiplica cada rasgo por
@@ -63,7 +64,7 @@ class Estadisticas:
         s, v, r = cfg.PLANTILLAS[dieta]
         return cls(s, v, r).variar(cfg.VARIACION_INICIAL, rng)
 
-    def variar(self, variacion: float, rng: Random) -> "Estadisticas":
+    def variar(self, variacion: float, rng: Random) -> Estadisticas:
         """Copia con cada rasgo multiplicado por 1 + uniforme(-variacion, +variacion).
 
         Sirve para dar variacion individual a las criaturas iniciales de una
@@ -77,8 +78,8 @@ class Estadisticas:
 
     @classmethod
     def cruzar(
-        cls, madre: "Estadisticas", padre: "Estadisticas", cfg: ConfigVida, rng: Random
-    ) -> "Estadisticas":
+        cls, madre: Estadisticas, padre: Estadisticas, cfg: ConfigVida, rng: Random
+    ) -> Estadisticas:
         """Estadisticas de la cria: herencia con mutacion de cada rasgo."""
         return cls(
             tamano=_heredar_rasgo(madre.tamano, padre.tamano, cfg.SIGMA, rng),
@@ -105,5 +106,5 @@ class Estadisticas:
         return {nombre: getattr(self, nombre) for nombre in _RASGOS}
 
     @classmethod
-    def desde_dict(cls, datos: Mapping[str, Any]) -> "Estadisticas":
+    def desde_dict(cls, datos: Mapping[str, Any]) -> Estadisticas:
         return cls(**{nombre: datos[nombre] for nombre in _RASGOS})

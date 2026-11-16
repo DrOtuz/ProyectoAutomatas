@@ -8,7 +8,8 @@ crias se daria por extinta por error).
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 from .criatura import Criatura
 from .estadisticas import Estadisticas
@@ -21,12 +22,12 @@ class Especie:
         nombre: str,
         dieta: Dieta,
         plantilla: Estadisticas,
-        color: Optional[str] = None,
+        color: str | None = None,
     ) -> None:
         if not isinstance(nombre, str) or not nombre.strip():
             raise ValueError("la especie necesita un nombre")
         if not isinstance(dieta, Dieta):
-            raise ValueError(f"dieta invalida: {dieta!r}")
+            raise TypeError(f"dieta invalida: {dieta!r}")
         self.nombre = nombre
         self.dieta = dieta
         self.plantilla = plantilla  # S, V y R de referencia de sus criaturas iniciales
@@ -86,7 +87,7 @@ class Especie:
         }
 
     @classmethod
-    def desde_dict(cls, datos: Mapping[str, Any]) -> "Especie":
+    def desde_dict(cls, datos: Mapping[str, Any]) -> Especie:
         """Reconstruye la especie (sin criaturas: Poblacion las vuelve a registrar)."""
         especie = cls(
             datos["nombre"],

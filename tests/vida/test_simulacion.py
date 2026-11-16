@@ -1,14 +1,13 @@
 import copy
 import csv
-import random
 
 import pytest
+from valores_doc import CFG_DOC
 
 from simulador.vida import simulacion_vida as sv
 from simulador.vida.config import ConfigVida
 from simulador.vida.poblacion import Poblacion
 from simulador.vida.tipos import Dieta
-from valores_doc import CFG_DOC
 
 
 @pytest.mark.parametrize("semilla", [1, 2, 3])

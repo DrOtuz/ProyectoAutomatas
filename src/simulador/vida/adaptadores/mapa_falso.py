@@ -11,7 +11,7 @@ Dibujo en texto (`desde_texto`):
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from ..percepcion import casillas_en_radio, vecinos
 from ..puertos import TIPO_COMIDA, TIPO_FUEGO
@@ -157,7 +157,7 @@ class MapaFalso:
     # --- dibujo en texto --------------------------------------------------------
 
     @classmethod
-    def desde_texto(cls, lineas: Iterable[str]) -> "MapaFalso":
+    def desde_texto(cls, lineas: Iterable[str]) -> MapaFalso:
         """Construye un mapa desde un dibujo (ver el docstring del modulo)."""
         filas = list(lineas)
         if not filas or not filas[0]:

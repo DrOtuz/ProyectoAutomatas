@@ -7,8 +7,8 @@ criatura de mas, etc.). El azar siempre llega por un `random.Random`.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from random import Random
-from typing import Callable, Iterable
 
 from .tipos import Pos
 

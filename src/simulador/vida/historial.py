@@ -7,7 +7,8 @@ extintas se conservan para poder graficarlas.
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 METRICAS = ("poblacion", "tamano", "velocidad", "vision", "energia")
 
@@ -19,7 +20,7 @@ class HistorialEspecie:
         self.nombre = nombre
         self.max_puntos = max_puntos
         self._ticks: list[int] = []
-        self._valores: dict[str, list[Optional[float]]] = {m: [] for m in METRICAS}
+        self._valores: dict[str, list[float | None]] = {m: [] for m in METRICAS}
 
     def __len__(self) -> int:
         return len(self._ticks)
@@ -42,12 +43,12 @@ class HistorialEspecie:
         for m in METRICAS:
             self._valores[m] = [self._valores[m][i] for i in indices]
 
-    def serie(self, metrica: str) -> list[tuple[int, Optional[float]]]:
+    def serie(self, metrica: str) -> list[tuple[int, float | None]]:
         if metrica not in self._valores:
             raise ValueError(f"metrica desconocida: {metrica!r} (use una de {METRICAS})")
-        return list(zip(self._ticks, self._valores[metrica]))
+        return list(zip(self._ticks, self._valores[metrica], strict=True))
 
-    def ultimo(self) -> Optional[dict[str, Any]]:
+    def ultimo(self) -> dict[str, Any] | None:
         if not self._ticks:
             return None
         d: dict[str, Any] = {"tick": self._ticks[-1]}
@@ -64,7 +65,7 @@ class HistorialEspecie:
         }
 
     @classmethod
-    def desde_dict(cls, d: Mapping[str, Any]) -> "HistorialEspecie":
+    def desde_dict(cls, d: Mapping[str, Any]) -> HistorialEspecie:
         h = cls(d["nombre"], d["max_puntos"])
         h._ticks = list(d["ticks"])
         h._valores = {m: list(d["valores"][m]) for m in METRICAS}
@@ -105,7 +106,7 @@ class GestorHistorial:
         }
 
     @classmethod
-    def desde_dict(cls, d: Mapping[str, Any]) -> "GestorHistorial":
+    def desde_dict(cls, d: Mapping[str, Any]) -> GestorHistorial:
         g = cls(d["max_puntos"])
         g.historiales = {n: HistorialEspecie.desde_dict(h) for n, h in d["historiales"].items()}
         return g

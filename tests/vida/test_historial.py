@@ -6,14 +6,14 @@ from simulador.vida.historial import METRICAS, GestorHistorial, HistorialEspecie
 
 
 def resumen(n, s=1.0, v=2.0, r=3.0, e=50.0):
-    return dict(poblacion=n, tamano=s, velocidad=v, vision=r, energia=e)
+    return {"poblacion": n, "tamano": s, "velocidad": v, "vision": r, "energia": e}
 
 
 def test_serie_devuelve_las_cinco_metricas_en_orden_de_tick():
     h = HistorialEspecie("a")
     h.registrar(1, resumen(10, s=1.0))
     h.registrar(2, resumen(12, s=1.5))
-    assert [m for m in METRICAS] == ["poblacion", "tamano", "velocidad", "vision", "energia"]
+    assert list(METRICAS) == ["poblacion", "tamano", "velocidad", "vision", "energia"]
     assert h.serie("poblacion") == [(1, 10), (2, 12)]
     assert h.serie("tamano") == [(1, 1.0), (2, 1.5)]
     for m in METRICAS:
@@ -50,7 +50,7 @@ def test_no_supera_max_puntos_y_conserva_lo_reciente():
 
 def test_especie_extinta_guarda_none():
     h = HistorialEspecie("a")
-    h.registrar(1, dict(poblacion=0, tamano=None, velocidad=None, vision=None, energia=None))
+    h.registrar(1, {"poblacion": 0, "tamano": None, "velocidad": None, "vision": None, "energia": None})
     assert h.serie("tamano") == [(1, None)]
 
 

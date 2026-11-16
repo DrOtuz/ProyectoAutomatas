@@ -5,8 +5,8 @@ import pytest
 from simulador.vida.percepcion import (
     casillas_en_radio,
     distancia,
-    paso_alejando,
     paso_aleatorio,
+    paso_alejando,
     paso_hacia,
     vecinos,
 )

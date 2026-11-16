@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import csv
 import sys
+from collections.abc import Callable, Mapping, Sequence
 from random import Random
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from .adaptadores.mapa_falso import MapaFalso
 from .config import ConfigVida
@@ -40,7 +41,7 @@ class Simulacion:
         self.mapa = mapa
         self.historial = historial
 
-    def avanzar(self, temperatura: Optional[float] = None) -> None:
+    def avanzar(self, temperatura: float | None = None) -> None:
         t = self.pob.cfg.TEMPERATURA_POR_DEFECTO if temperatura is None else temperatura
         self.mapa.regenerar()
         self.pob.actualizar(self.mapa, t)
@@ -74,8 +75,8 @@ def crear_mapa(semilla: int, ancho: int = 50, alto: int = 50) -> MapaFalso:
 
 
 def crear_escenario(
-    cfg: Optional[ConfigVida] = None, semilla: int = 1,
-    ancho: int = 50, alto: int = 50, iniciales: Optional[Mapping[str, int]] = None,
+    cfg: ConfigVida | None = None, semilla: int = 1,
+    ancho: int = 50, alto: int = 50, iniciales: Mapping[str, int] | None = None,
 ) -> Simulacion:
     cfg = cfg or ConfigVida()
     iniciales = iniciales or INICIALES
@@ -87,8 +88,8 @@ def crear_escenario(
 
 
 def correr(
-    ticks: int, cfg: Optional[ConfigVida] = None, semilla: int = 1, cada: int = 50,
-    salida: Optional[Callable[[str], None]] = print, sim: Optional[Simulacion] = None,
+    ticks: int, cfg: ConfigVida | None = None, semilla: int = 1, cada: int = 50,
+    salida: Callable[[str], None] | None = print, sim: Simulacion | None = None,
 ) -> Simulacion:
     sim = sim or crear_escenario(cfg, semilla)
     nombres = list(ESPECIES_ESCENARIO)
@@ -124,7 +125,7 @@ def exportar_csv(historial: GestorHistorial, ruta: str) -> None:
 
 def barrido(
     configs: Mapping[str, ConfigVida], semillas: Sequence[int], ticks: int,
-    salida: Optional[Callable[[str], None]] = print,
+    salida: Callable[[str], None] | None = print,
 ) -> dict[str, dict[str, Any]]:
     """Corre cada configuracion con cada semilla y cuenta en cuantas sobrevive cada dieta.
 
@@ -145,9 +146,9 @@ def barrido(
                 vivas[dieta] += ok
             saturadas += tope >= cfg.MAX_CRIATURAS
             todas += all(sim.vivas_por_dieta().values())
-        resultado[nombre] = dict(
-            semillas=len(semillas), vivas=vivas, coexisten=todas, saturadas=saturadas
-        )
+        resultado[nombre] = {
+            "semillas": len(semillas), "vivas": vivas, "coexisten": todas, "saturadas": saturadas
+        }
         if salida:
             salida(f"{nombre}: coexisten {todas}/{len(semillas)}  vivas={vivas}  saturadas={saturadas}")
     return resultado

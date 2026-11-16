@@ -4,10 +4,10 @@ import random
 import time
 
 import pytest
+from valores_doc import CFG_DOC as CFG
 
 from simulador.vida.adaptadores.mapa_falso import MapaFalso
 from simulador.vida.automata_criatura import ContextoVida
-from simulador.vida.config import ConfigVida
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.poblacion import (
     EXTINCION,
@@ -17,8 +17,7 @@ from simulador.vida.poblacion import (
 )
 from simulador.vida.tipos import CausaMuerte, Dieta, EstadoEspecie
 
-from valores_doc import CFG_DOC as CFG
-H, O, C = Dieta.HERBIVORO, Dieta.OMNIVORO, Dieta.CARNIVORO
+H, OM, C = Dieta.HERBIVORO, Dieta.OMNIVORO, Dieta.CARNIVORO
 
 
 # --- ayudas ------------------------------------------------------------------------------------
@@ -59,7 +58,7 @@ def registro(pob):
 def escenario3(semilla=1, cfg=CFG):
     pob, mapa = nueva(cfg, semilla), mapa_con(40, 40)
     pob.crear_especie("conejo", H, 60, mapa)
-    pob.crear_especie("zorro", O, 20, mapa)
+    pob.crear_especie("zorro", OM, 20, mapa)
     pob.crear_especie("lobo", C, 10, mapa)
     return pob, mapa
 
@@ -148,7 +147,7 @@ def test_los_nombres_no_se_repiten_salvo_el_de_una_especie_eliminada():
 def test_argumentos_invalidos():
     mapa = MapaFalso(10, 10)
     pob = nueva()
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         pob.crear_especie("a", "herbivoro", 3, mapa)  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         pob.crear_especie("a", H, -1, mapa)
@@ -314,7 +313,7 @@ def test_nacimientos_menos_muertes_es_la_poblacion():
     pob, mapa = nueva(semilla=3), mapa_con(40, 40)
     eventos = registro(pob)  # antes de crear, para contar tambien a las iniciales
     pob.crear_especie("conejo", H, 60, mapa)
-    pob.crear_especie("zorro", O, 20, mapa)
+    pob.crear_especie("zorro", OM, 20, mapa)
     pob.crear_especie("lobo", C, 10, mapa)
     for _ in range(300):
         paso(pob, mapa)
@@ -374,7 +373,7 @@ def test_la_cria_hereda_de_los_padres_con_mutacion():
 
 
 def test_reproduccion_repetida_un_padre_lleno_se_reproduce_hasta_bajar_de_50():
-    pob, mapa, uno, dos = preparar_pareja(energia=100.0, ancho=20, alto=20)
+    pob, mapa, _uno, _dos = preparar_pareja(energia=100.0, ancho=20, alto=20)
     eventos = registro(pob)
     for _ in range(4):
         pob.actualizar(mapa, 22.0)
@@ -383,7 +382,7 @@ def test_reproduccion_repetida_un_padre_lleno_se_reproduce_hasta_bajar_de_50():
 
 
 def test_no_hay_reproduccion_entre_especies_distintas():
-    pob, mapa, uno, dos = preparar_pareja(especie_b="b")
+    pob, mapa, _uno, _dos = preparar_pareja(especie_b="b")
     pob.actualizar(mapa, 22.0)
     assert pob.total() == 2
 
@@ -500,8 +499,8 @@ def test_snapshot_da_la_poblacion_y_los_promedios():
     pob.eliminar_especie("borrada")
     s = pob.snapshot()
     assert set(s) == {"a", "vacia"}
-    assert s["a"] == dict(poblacion=2, tamano=2.0, velocidad=1.5, vision=5.0, energia=50.0)
-    assert s["vacia"] == dict(poblacion=0, tamano=None, velocidad=None, vision=None, energia=None)
+    assert s["a"] == {"poblacion": 2, "tamano": 2.0, "velocidad": 1.5, "vision": 5.0, "energia": 50.0}
+    assert s["vacia"] == {"poblacion": 0, "tamano": None, "velocidad": None, "vision": None, "energia": None}
 
 
 # --- simulaciones largas -----------------------------------------------------------------------------------------------------
@@ -550,7 +549,7 @@ def test_un_tick_con_cientos_de_criaturas_es_rapido():
     cfg = CFG.con(MAX_CRIATURAS=1000)
     pob, mapa = nueva(cfg), mapa_con(100, 100, "arbol")
     pob.crear_especie("a", H, 400, mapa)
-    pob.crear_especie("b", O, 200, mapa)
+    pob.crear_especie("b", OM, 200, mapa)
     pob.crear_especie("c", C, 100, mapa)
     inicio = time.perf_counter()
     for _ in range(20):

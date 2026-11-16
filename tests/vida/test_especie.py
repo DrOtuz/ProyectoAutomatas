@@ -1,12 +1,10 @@
 import pytest
+from valores_doc import CFG_DOC as CFG
 
-from simulador.vida.config import ConfigVida
 from simulador.vida.criatura import Criatura
 from simulador.vida.especie import Especie
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.tipos import Dieta, EstadoEspecie
-
-from valores_doc import CFG_DOC as CFG
 
 
 def especie(nombre="conejo", dieta=Dieta.HERBIVORO):
@@ -30,7 +28,7 @@ def test_exige_un_nombre(nombre):
 
 
 def test_exige_una_dieta_valida():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Especie("x", "herbivoro", Estadisticas(1, 1, 4))
 
 

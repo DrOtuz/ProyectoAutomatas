@@ -20,9 +20,10 @@ Orden de `actualizar`:
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from random import Random
-from typing import Any, Callable, Mapping, Optional
+from typing import Any
 
 from .automata_criatura import AutomataCriatura
 from .config import ConfigVida
@@ -45,8 +46,8 @@ class EventoVida:
     tipo: str  # NACIMIENTO, MUERTE o EXTINCION
     tick: int
     especie: str
-    criatura_id: Optional[int] = None
-    causa: Optional[CausaMuerte] = None  # solo en MUERTE
+    criatura_id: int | None = None
+    causa: CausaMuerte | None = None  # solo en MUERTE
 
 
 class Poblacion:
@@ -95,17 +96,17 @@ class Poblacion:
             vivas = [self._criaturas[i] for i in especie.ids]
             n = len(vivas)
             if n == 0:
-                resumen[nombre] = dict(
-                    poblacion=0, tamano=None, velocidad=None, vision=None, energia=None
-                )
+                resumen[nombre] = {
+                    "poblacion": 0, "tamano": None, "velocidad": None, "vision": None, "energia": None
+                }
                 continue
-            resumen[nombre] = dict(
-                poblacion=n,
-                tamano=sum(c.stats.tamano for c in vivas) / n,
-                velocidad=sum(c.stats.velocidad for c in vivas) / n,
-                vision=sum(c.stats.vision for c in vivas) / n,
-                energia=sum(c.energia for c in vivas) / n,
-            )
+            resumen[nombre] = {
+                "poblacion": n,
+                "tamano": sum(c.stats.tamano for c in vivas) / n,
+                "velocidad": sum(c.stats.velocidad for c in vivas) / n,
+                "vision": sum(c.stats.vision for c in vivas) / n,
+                "energia": sum(c.energia for c in vivas) / n,
+            }
         return resumen
 
     # ================================================================================
@@ -121,8 +122,8 @@ class Poblacion:
             self._escuchas.remove(escucha)
 
     def _emitir(
-        self, tipo: str, especie: str, criatura: Optional[Criatura] = None,
-        causa: Optional[CausaMuerte] = None,
+        self, tipo: str, especie: str, criatura: Criatura | None = None,
+        causa: CausaMuerte | None = None,
     ) -> None:
         if not self._escuchas:
             return
@@ -219,7 +220,7 @@ class Poblacion:
             and self.ocupacion(pos) < self.cfg.MAX_POR_CASILLA
         )
 
-    def casilla_libre_cerca(self, pos: Pos, mapa: MapaPuerto) -> Optional[Pos]:
+    def casilla_libre_cerca(self, pos: Pos, mapa: MapaPuerto) -> Pos | None:
         """La casilla libre mas cercana a `pos` (hasta RADIO_BUSQUEDA_CRIA); si
         hay varias a la misma distancia, una al azar. None si no hay ninguna."""
         for r in range(1, self.cfg.RADIO_BUSQUEDA_CRIA + 1):
@@ -310,8 +311,8 @@ class Poblacion:
         self,
         nombre: str,
         pos: Pos,
-        energia: Optional[float] = None,
-        stats: Optional[Estadisticas] = None,
+        energia: float | None = None,
+        stats: Estadisticas | None = None,
     ) -> Criatura:
         """Agrega UNA criatura a una especie en `pos` (sin revisar el mapa: quien
         llama se asegura de que la casilla sirva). Falla si se pasaria del limite."""
@@ -333,8 +334,8 @@ class Poblacion:
         nombre: str,
         cantidad: int,
         mapa: MapaPuerto,
-        posiciones: Optional[list[Pos]] = None,
-        energia: Optional[float] = None,
+        posiciones: list[Pos] | None = None,
+        energia: float | None = None,
     ) -> int:
         """Agrega hasta `cantidad` criaturas a una especie ya creada.
 
@@ -386,9 +387,9 @@ class Poblacion:
         dieta: Dieta,
         cantidad: int,
         mapa: MapaPuerto,
-        plantilla: Optional[Estadisticas] = None,
-        color: Optional[str] = None,
-        energia: Optional[float] = None,
+        plantilla: Estadisticas | None = None,
+        color: str | None = None,
+        energia: float | None = None,
     ) -> Especie:
         """Crea una especie y coloca `cantidad` criaturas en casillas libres al azar.
 
@@ -398,7 +399,7 @@ class Poblacion:
         una especie ya eliminada.
         """
         if not isinstance(dieta, Dieta):
-            raise ValueError(f"dieta invalida: {dieta!r}")
+            raise TypeError(f"dieta invalida: {dieta!r}")
         if cantidad < 0:
             raise ValueError("cantidad no puede ser negativa")
         existente = self.especies.get(nombre)
@@ -504,8 +505,8 @@ class Poblacion:
 
     @classmethod
     def desde_dict(
-        cls, datos: Mapping[str, Any], cfg: Optional[ConfigVida] = None
-    ) -> "Poblacion":
+        cls, datos: Mapping[str, Any], cfg: ConfigVida | None = None
+    ) -> Poblacion:
         """Reconstruye una poblacion guardada con `a_dict` (sin avisar eventos)."""
         if cfg is None:
             cfg = ConfigVida.desde_dict(datos["cfg"])

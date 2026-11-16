@@ -1,11 +1,11 @@
 import random
 
 import pytest
+from valores_doc import CFG_DOC as CFG
 
 from simulador.vida.adaptadores.contexto_falso import ContextoFalso
 from simulador.vida.adaptadores.mapa_falso import MapaFalso
 from simulador.vida.automata_criatura import AutomataCriatura, ContextoVida
-from simulador.vida.config import ConfigVida
 from simulador.vida.criatura import Criatura
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.percepcion import distancia
@@ -18,7 +18,6 @@ from simulador.vida.tipos import (
     TipoObjetivo,
 )
 
-from valores_doc import CFG_DOC as CFG
 _ids = iter(range(1, 100_000))
 
 

@@ -2,8 +2,8 @@ import json
 import random
 
 import pytest
+from valores_doc import CFG_DOC as CFG
 
-from simulador.vida.config import ConfigVida
 from simulador.vida.criatura import Criatura, factor_temperatura
 from simulador.vida.estadisticas import Estadisticas
 from simulador.vida.tipos import (
@@ -14,7 +14,6 @@ from simulador.vida.tipos import (
     Estado,
 )
 
-from valores_doc import CFG_DOC as CFG
 _ids = iter(range(1, 10_000))
 
 

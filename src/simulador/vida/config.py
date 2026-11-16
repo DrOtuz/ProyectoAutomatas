@@ -10,8 +10,9 @@ pueden cambiar; se ajustan aqui o en el adaptador, sin tocar la logica.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields, replace
-from typing import Any, ClassVar, Mapping
+from typing import Any, ClassVar
 
 from .tipos import Dieta
 
@@ -105,13 +106,13 @@ class ConfigVida:
         """Por debajo de esta energia deja de buscar pareja."""
         return self.UMBRAL_SALIDA_PAREJA_PCT * self.E_MAX
 
-    def con(self, **cambios: Any) -> "ConfigVida":
+    def con(self, **cambios: Any) -> ConfigVida:
         """Copia de esta configuracion con algunos campos cambiados."""
         return replace(self, **cambios)
 
     # --- validacion --------------------------------------------------------
 
-    def validar(self) -> "ConfigVida":
+    def validar(self) -> ConfigVida:
         """Revisa que los valores sean coherentes. Devuelve self si todo esta bien.
 
         Lanza ValueError con la lista de todos los problemas encontrados.
@@ -198,7 +199,7 @@ class ConfigVida:
         return datos
 
     @classmethod
-    def desde_dict(cls, datos: Mapping[str, Any]) -> "ConfigVida":
+    def desde_dict(cls, datos: Mapping[str, Any]) -> ConfigVida:
         """Reconstruye una configuracion.
 
         Ignora claves desconocidas (por ejemplo, de una version posterior) y

@@ -21,13 +21,14 @@ casilla y se lo come en ese mismo tick.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from random import Random
-from typing import Callable, Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from .config import ConfigVida
 from .criatura import Criatura
-from .percepcion import distancia, paso_alejando, paso_aleatorio, paso_hacia
+from .percepcion import distancia, paso_aleatorio, paso_alejando, paso_hacia
 from .puertos import TIPO_COMIDA, TIPO_FUEGO, MapaPuerto
 from .tipos import INTENCION_PAREJA, Estado, Objetivo, Pos, TipoObjetivo
 
@@ -178,7 +179,7 @@ class AutomataCriatura:
 
     def elegir_estado(
         self, c: Criatura, p: Percepcion
-    ) -> tuple[Estado, Optional[Objetivo]]:
+    ) -> tuple[Estado, Objetivo | None]:
         """Decide el estado y el objetivo. Prioridad HUIR > comer/pareja > EXPLORAR.
 
         La histeresis (pareja con e >= 70, alimento con e < 50) vive en
@@ -203,7 +204,7 @@ class AutomataCriatura:
         """ganancia / (distancia + 1): prefiere lo que mas da y mas cerca esta."""
         return objetivo.ganancia / (objetivo.distancia + 1)
 
-    def elegir_objetivo_comida(self, c: Criatura, p: Percepcion) -> Optional[Objetivo]:
+    def elegir_objetivo_comida(self, c: Criatura, p: Percepcion) -> Objetivo | None:
         """El objetivo de mayor puntaje entre plantas y presas elegibles."""
         candidatos = p.plantas + p.presas
         if not candidatos:
@@ -214,7 +215,7 @@ class AutomataCriatura:
         )
 
     @staticmethod
-    def elegir_pareja(c: Criatura, p: Percepcion) -> Optional[Objetivo]:
+    def elegir_pareja(c: Criatura, p: Percepcion) -> Objetivo | None:
         """La pareja elegible mas cercana (desempata por id, para ser determinista)."""
         if not p.parejas:
             return None
@@ -226,7 +227,7 @@ class AutomataCriatura:
         self,
         c: Criatura,
         estado: Estado,
-        objetivo: Optional[Objetivo],
+        objetivo: Objetivo | None,
         p: Percepcion,
         mapa: MapaPuerto,
         ctx: ContextoVida,

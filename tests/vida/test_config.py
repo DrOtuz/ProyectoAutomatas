@@ -1,3 +1,4 @@
+import dataclasses
 import json
 
 import pytest
@@ -36,7 +37,7 @@ def test_validar_acepta_los_valores_por_defecto():
 
 def test_es_inmutable_y_con_crea_copias():
     cfg = ConfigVida()
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         cfg.SIGMA = 0.5  # type: ignore[misc]
     otra = cfg.con(SIGMA=0.08)
     assert otra.SIGMA == 0.08 and cfg.SIGMA == 0.05

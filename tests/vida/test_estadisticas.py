@@ -5,13 +5,10 @@ import random
 import statistics
 
 import pytest
-
-from simulador.vida.config import ConfigVida
-from simulador.vida.estadisticas import Estadisticas
-from simulador.vida.tipos import Dieta
-
 from valores_doc import CFG_DOC as CFG
 
+from simulador.vida.estadisticas import Estadisticas
+from simulador.vida.tipos import Dieta
 
 # --- validacion e inmutabilidad -----------------------------------------------
 
@@ -21,7 +18,7 @@ from valores_doc import CFG_DOC as CFG
 def test_rechaza_rasgos_invalidos(rasgo, malo):
     base = {"tamano": 1.0, "velocidad": 1.0, "vision": 4.0}
     base[rasgo] = malo
-    with pytest.raises(ValueError):
+    with pytest.raises((TypeError, ValueError)):
         Estadisticas(**base)
 
 
