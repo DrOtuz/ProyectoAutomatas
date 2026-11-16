@@ -613,3 +613,12 @@ def test_un_guardado_sin_historial_se_carga_con_historial_vacio():
     assert viejo.historial.nombres() == []
     paso(viejo, mapa)
     assert len(viejo.historial["conejo"]) == 1
+
+
+def test_snapshot_no_depende_del_orden_interno_de_las_criaturas():
+    pob, mapa = escenario3(semilla=7)
+    for _ in range(40):
+        paso(pob, mapa)
+    cargada = Poblacion.desde_dict(json.loads(json.dumps(pob.a_dict())), CFG)
+    # mismas criaturas, pero los conjuntos internos se armaron en otro orden:
+    assert cargada.snapshot() == pob.snapshot()  # igualdad exacta, sin tolerancia

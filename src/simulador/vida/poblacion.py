@@ -21,6 +21,7 @@ Orden de `actualizar`:
 """
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from random import Random
@@ -92,12 +93,17 @@ class Poblacion:
 
     def snapshot(self) -> dict[str, dict[str, Any]]:
         """Resumen por especie (sin las eliminadas): poblacion y promedios de
-        S, V, R y energia. Una especie extinta tiene poblacion 0 y promedios None."""
+        S, V, R y energia. Una especie extinta tiene poblacion 0 y promedios None.
+
+        Los promedios usan math.fsum: el resultado no depende del orden en que
+        se sumen las criaturas (el conjunto de ids de la especie no tiene un
+        orden fijo), asi que una poblacion cargada da exactamente los mismos
+        numeros que la original, en cualquier maquina."""
         resumen: dict[str, dict[str, Any]] = {}
         for nombre, especie in self.especies.items():
             if especie.estado == EstadoEspecie.ELIMINADA:
                 continue
-            vivas = [self._criaturas[i] for i in especie.ids]
+            vivas = [self._criaturas[i] for i in sorted(especie.ids)]
             n = len(vivas)
             if n == 0:
                 resumen[nombre] = {
@@ -106,10 +112,10 @@ class Poblacion:
                 continue
             resumen[nombre] = {
                 "poblacion": n,
-                "tamano": sum(c.stats.tamano for c in vivas) / n,
-                "velocidad": sum(c.stats.velocidad for c in vivas) / n,
-                "vision": sum(c.stats.vision for c in vivas) / n,
-                "energia": sum(c.energia for c in vivas) / n,
+                "tamano": math.fsum(c.stats.tamano for c in vivas) / n,
+                "velocidad": math.fsum(c.stats.velocidad for c in vivas) / n,
+                "vision": math.fsum(c.stats.vision for c in vivas) / n,
+                "energia": math.fsum(c.energia for c in vivas) / n,
             }
         return resumen
 
