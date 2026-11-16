@@ -15,6 +15,11 @@ if TYPE_CHECKING:  # solo para anotaciones; evita un ciclo de importacion
 # Posicion en el mapa: (x, y). x es la columna e y la fila.
 Pos = tuple[int, int]
 
+# Lo que una criatura "quiere" segun su energia (con histeresis). Lo usan el
+# automata y EXPLORAR para saber que buscar cuando no hay nada a la vista.
+INTENCION_ALIMENTO = "alimento"
+INTENCION_PAREJA = "pareja"
+
 
 class Dieta(Enum):
     """Dieta de una especie. Se define al crear la especie y no muta."""

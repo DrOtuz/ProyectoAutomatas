@@ -1,5 +1,6 @@
 """Paquete vida/: criaturas, comportamiento, herencia y poblacion (Subgrupo B)."""
 from .config import ConfigVida
+from .criatura import Criatura
 from .estadisticas import Estadisticas
 from .tipos import (
     CausaMuerte,
@@ -14,6 +15,7 @@ from .tipos import (
 __all__ = [
     "CausaMuerte",
     "ConfigVida",
+    "Criatura",
     "Dieta",
     "Estadisticas",
     "Estado",
