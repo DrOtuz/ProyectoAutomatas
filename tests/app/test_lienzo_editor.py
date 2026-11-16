@@ -24,6 +24,7 @@ def test_lienzo_pinta_agua_al_hacer_click(widget_editor):
     evento_press = QMouseEvent(
         QMouseEvent.Type.MouseButtonPress,
         pos,
+        pos,
         Qt.MouseButton.LeftButton,
         Qt.MouseButton.LeftButton,
         Qt.KeyboardModifier.NoModifier,
