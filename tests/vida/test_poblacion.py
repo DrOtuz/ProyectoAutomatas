@@ -556,3 +556,69 @@ def test_un_tick_con_cientos_de_criaturas_es_rapido():
         paso(pob, mapa)
     por_tick = (time.perf_counter() - inicio) / 20
     assert por_tick < 0.5, f"{por_tick:.3f} s por tick"
+
+
+# --- rango de estadisticas y historial propio --------------------------------------------------
+
+
+def test_crear_especie_rechaza_estadisticas_fuera_del_rango():
+    pob, mapa = nueva(), mapa_con(10, 10)
+    with pytest.raises(ValueError, match="velocidad"):
+        pob.crear_especie("veloz", H, 3, mapa, plantilla=Estadisticas(1.0, 5.0, 4.0))
+    assert "veloz" not in pob.especies  # no se creo nada
+    pob.crear_especie("ok", H, 3, mapa, plantilla=Estadisticas(0.5, 3.0, 10.0))  # limites incluidos
+    assert pob.especies["ok"].contar() == 3
+
+
+def test_poblacion_llena_su_historial_en_cada_tick():
+    pob, mapa = escenario3()
+    for _ in range(25):
+        paso(pob, mapa)
+    assert pob.historial.nombres() == ["conejo", "zorro", "lobo"]
+    serie = pob.historial["conejo"].serie("poblacion")
+    assert [t for t, _ in serie] == list(range(1, 26))
+    assert serie[-1][1] == pob.snapshot()["conejo"]["poblacion"]
+
+
+def test_el_historial_se_conserva_al_extinguirse_o_eliminarse_una_especie():
+    pob, mapa = nueva(), mapa_con(10, 10)
+    pob.crear_especie("a", H, 5, mapa)
+    pob.crear_especie("b", H, 5, mapa)
+    paso(pob, mapa)
+    pob.eliminar_especie("b")
+    for _ in range(3):
+        paso(pob, mapa)
+    assert len(pob.historial["b"]) == 1  # solo el tick en que estaba viva
+    assert len(pob.historial["a"]) == 4
+
+
+def test_el_historial_viaja_en_el_guardado_y_sigue_igual():
+    pob, mapa = escenario3(semilla=2)
+    for _ in range(30):
+        paso(pob, mapa)
+    mapa2 = copy.deepcopy(mapa)
+    pob2 = Poblacion.desde_dict(json.loads(json.dumps(pob.a_dict())), CFG)
+    for _ in range(20):
+        paso(pob, mapa)
+        paso(pob2, mapa2)
+    assert pob2.historial.a_dict() == pob.historial.a_dict()
+
+
+def test_un_guardado_sin_historial_se_carga_con_historial_vacio():
+    pob, mapa = escenario3()
+    paso(pob, mapa)
+    datos = pob.a_dict()
+    del datos["historial"]
+    viejo = Poblacion.desde_dict(datos, CFG)
+    assert viejo.historial.nombres() == []
+    paso(viejo, mapa)
+    assert len(viejo.historial["conejo"]) == 1
+
+
+def test_snapshot_no_depende_del_orden_interno_de_las_criaturas():
+    pob, mapa = escenario3(semilla=7)
+    for _ in range(40):
+        paso(pob, mapa)
+    cargada = Poblacion.desde_dict(json.loads(json.dumps(pob.a_dict())), CFG)
+    # mismas criaturas, pero los conjuntos internos se armaron en otro orden:
+    assert cargada.snapshot() == pob.snapshot()  # igualdad exacta, sin tolerancia

@@ -5,7 +5,8 @@ Es el unico punto de entrada de la aplicacion hacia vida/:
     actualizar(mapa, temperatura)   un tick completo (lo llama el bucle de simulacion)
     crear_especie / eliminar_especie / agregar_individuos   (lo llama la interfaz)
     eliminar_en(x, y)               (lo llama el automata del incendio de A)
-    snapshot()                      resumen por especie, para el historial y las graficas
+    snapshot()                      resumen por especie
+    historial                       series por especie para las graficas (se llena solo en actualizar)
     suscribir(escucha)              eventos de nacimiento, muerte y extincion
     a_dict() / desde_dict()         guardado y carga
 
@@ -20,6 +21,7 @@ Orden de `actualizar`:
 """
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from random import Random
@@ -30,6 +32,7 @@ from .config import ConfigVida
 from .criatura import Criatura
 from .especie import Especie
 from .estadisticas import Estadisticas
+from .historial import GestorHistorial
 from .percepcion import casillas_en_radio, distancia
 from .puertos import MapaPuerto
 from .tipos import CausaMuerte, Dieta, EstadoEspecie, Pos
@@ -59,6 +62,8 @@ class Poblacion:
         self.automata = AutomataCriatura(cfg, rng)
         self.especies: dict[str, Especie] = {}
         self.tick = 0
+        # una serie por especie, alimentada al final de cada tick (para las graficas)
+        self.historial = GestorHistorial(cfg.MAX_PUNTOS_HISTORIAL)
 
         self._criaturas: dict[int, Criatura] = {}  # vivas y muertas aun sin retirar
         self._indice: dict[Pos, list[Criatura]] = {}
@@ -88,12 +93,17 @@ class Poblacion:
 
     def snapshot(self) -> dict[str, dict[str, Any]]:
         """Resumen por especie (sin las eliminadas): poblacion y promedios de
-        S, V, R y energia. Una especie extinta tiene poblacion 0 y promedios None."""
+        S, V, R y energia. Una especie extinta tiene poblacion 0 y promedios None.
+
+        Los promedios usan math.fsum: el resultado no depende del orden en que
+        se sumen las criaturas (el conjunto de ids de la especie no tiene un
+        orden fijo), asi que una poblacion cargada da exactamente los mismos
+        numeros que la original, en cualquier maquina."""
         resumen: dict[str, dict[str, Any]] = {}
         for nombre, especie in self.especies.items():
             if especie.estado == EstadoEspecie.ELIMINADA:
                 continue
-            vivas = [self._criaturas[i] for i in especie.ids]
+            vivas = [self._criaturas[i] for i in sorted(especie.ids)]
             n = len(vivas)
             if n == 0:
                 resumen[nombre] = {
@@ -102,10 +112,10 @@ class Poblacion:
                 continue
             resumen[nombre] = {
                 "poblacion": n,
-                "tamano": sum(c.stats.tamano for c in vivas) / n,
-                "velocidad": sum(c.stats.velocidad for c in vivas) / n,
-                "vision": sum(c.stats.vision for c in vivas) / n,
-                "energia": sum(c.energia for c in vivas) / n,
+                "tamano": math.fsum(c.stats.tamano for c in vivas) / n,
+                "velocidad": math.fsum(c.stats.velocidad for c in vivas) / n,
+                "vision": math.fsum(c.stats.vision for c in vivas) / n,
+                "energia": math.fsum(c.energia for c in vivas) / n,
             }
         return resumen
 
@@ -246,6 +256,7 @@ class Poblacion:
         for c in vivas:
             self.automata.turno(c, mapa, self, temperatura)  # salta a las ya muertas
         self._limpiar()
+        self.historial.registrar(self.tick, self.snapshot())
 
     def _limpiar(self) -> None:
         """Retira a las muertas, incorpora las crias y declara las extinciones."""
@@ -407,6 +418,10 @@ class Poblacion:
             raise ValueError(f"ya existe una especie llamada {nombre!r}")
         if plantilla is None:
             plantilla = Estadisticas(*self.cfg.PLANTILLAS[dieta])
+        else:  # lo eligio el usuario: debe caer dentro del rango permitido
+            self.cfg.comprobar_estadisticas(
+                plantilla.tamano, plantilla.velocidad, plantilla.vision
+            )
         especie = Especie(nombre, dieta, plantilla, color)
         self.especies[nombre] = especie
         self.agregar_individuos(nombre, cantidad, mapa, energia=energia)
@@ -501,6 +516,7 @@ class Poblacion:
             "rng": [version, list(interno), gauss],
             "especies": [e.a_dict() for e in self.especies.values()],
             "criaturas": [c.a_dict() for c in self._criaturas.values() if c.viva],
+            "historial": self.historial.a_dict(),
         }
 
     @classmethod
@@ -521,4 +537,6 @@ class Poblacion:
             pob.especies[especie.nombre] = especie
         for d in datos["criaturas"]:
             pob._registrar(Criatura.desde_dict(d, cfg), emitir=False)
+        if "historial" in datos:  # los guardados anteriores no lo traen
+            pob.historial = GestorHistorial.desde_dict(datos["historial"])
         return pob
