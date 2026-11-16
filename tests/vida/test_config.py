@@ -121,3 +121,24 @@ def test_desde_dict_completa_dietas_faltantes_con_los_defaults():
     assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.4
     assert cfg.ETA_PLANTA[Dieta.OMNIVORO] == 0.20
     cfg.validar()
+
+
+def test_comprobar_estadisticas_acepta_los_limites_y_rechaza_lo_de_afuera():
+    cfg = ConfigVida()
+    cfg.comprobar_estadisticas(0.5, 0.5, 1)  # minimos
+    cfg.comprobar_estadisticas(3.0, 3.0, 10)  # maximos
+    for malo in [(0.4, 1, 4), (3.1, 1, 4), (1, 0.4, 4), (1, 3.1, 4), (1, 1, 0.9), (1, 1, 10.1)]:
+        with pytest.raises(ValueError, match="debe estar entre"):
+            cfg.comprobar_estadisticas(*malo)
+
+
+def test_validar_rechaza_rangos_incoherentes_y_plantillas_fuera_de_rango():
+    with pytest.raises(ValueError, match="RANGO_TAMANO"):
+        ConfigVida().con(RANGO_TAMANO=(2.0, 1.0)).validar()
+    with pytest.raises(ValueError, match="fuera de rango"):
+        ConfigVida().con(RANGO_VISION=(1.0, 3.0)).validar()  # las plantillas usan R de 4 a 7
+
+
+def test_los_rangos_sobreviven_al_guardado():
+    cfg = ConfigVida().con(RANGO_VELOCIDAD=(0.8, 2.5))
+    assert ConfigVida.desde_dict(json.loads(json.dumps(cfg.a_dict()))).RANGO_VELOCIDAD == (0.8, 2.5)

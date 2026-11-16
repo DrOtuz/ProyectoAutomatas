@@ -40,6 +40,7 @@ def _plantillas_defecto() -> dict[Dieta, tuple[float, float, float]]:
 # guardar y cargar).
 _CAMPOS_ETA = ("ETA_PLANTA", "ETA_CARNE")
 _CAMPO_PLANTILLAS = "PLANTILLAS"
+_CAMPOS_RANGO = ("RANGO_TAMANO", "RANGO_VELOCIDAD", "RANGO_VISION")
 
 
 def _a_dieta(clave: Any) -> Dieta:
@@ -78,6 +79,12 @@ class ConfigVida:
     VARIACION_INICIAL: float = 0.10  # variacion individual al crear una especie
     PLANTILLAS: dict = field(default_factory=_plantillas_defecto)
 
+    # Rango valido de S, V y R cuando el usuario elige las estadisticas de su
+    # especie: (minimo, maximo), ambos incluidos.
+    RANGO_TAMANO: tuple = (0.5, 3.0)
+    RANGO_VELOCIDAD: tuple = (0.5, 3.0)  # casillas por tick
+    RANGO_VISION: tuple = (1.0, 10.0)  # radio
+
     # --- vejez -------------------------------------------------------------
     VEJEZ_ACTIVA: bool = True
     VIDA_BASE: float = 1500.0  # ticks; vida_max = VIDA_BASE * S^EXPONENTE_VEJEZ
@@ -89,6 +96,7 @@ class ConfigVida:
     MAX_POR_CASILLA: int = 1
     RADIO_BUSQUEDA_CRIA: int = 2  # a que distancia de los padres puede nacer
     INERCIA_EXPLORAR: float = 0.7  # probabilidad de seguir recto al explorar
+    MAX_PUNTOS_HISTORIAL: int = 2000  # puntos por especie antes de reducir el historial
 
     # --- depende de A (mapa) -----------------------------------------------
     FACTOR_BIOMASA: float = 1.0  # multiplica la comida que reporta el mapa
@@ -154,6 +162,13 @@ class ConfigVida:
         exigir(self.RADIO_BUSQUEDA_CRIA >= 1, "RADIO_BUSQUEDA_CRIA debe ser >= 1")
         exigir(0 <= self.INERCIA_EXPLORAR <= 1, "INERCIA_EXPLORAR debe estar en [0, 1]")
         exigir(self.FACTOR_BIOMASA > 0, "FACTOR_BIOMASA debe ser > 0")
+        exigir(self.MAX_PUNTOS_HISTORIAL >= 4, "MAX_PUNTOS_HISTORIAL debe ser >= 4")
+        for nombre in _CAMPOS_RANGO:
+            rango = getattr(self, nombre)
+            exigir(
+                len(rango) == 2 and 0 < rango[0] <= rango[1],
+                f"{nombre} debe ser (minimo, maximo) con 0 < minimo <= maximo",
+            )
 
         for dieta in Dieta:
             eta_p = self.ETA_PLANTA.get(dieta)
@@ -179,10 +194,26 @@ class ConfigVida:
                     len(plantilla) == 3 and all(x > 0 for x in plantilla),
                     f"PLANTILLAS[{dieta.name}] debe ser (S, V, R) con valores > 0",
                 )
+                if len(plantilla) == 3 and all(x > 0 for x in plantilla):
+                    try:
+                        self.comprobar_estadisticas(*plantilla)
+                    except ValueError as error:
+                        errores.append(f"PLANTILLAS[{dieta.name}] fuera de rango: {error}")
 
         if errores:
             raise ValueError("Configuracion invalida:\n- " + "\n- ".join(errores))
         return self
+
+    def comprobar_estadisticas(self, tamano: float, velocidad: float, vision: float) -> None:
+        """Lanza ValueError (en espanol, para mostrar al usuario) si S, V o R
+        quedan fuera del rango permitido."""
+        for etiqueta, valor, (minimo, maximo) in (
+            ("El tamano", tamano, self.RANGO_TAMANO),
+            ("La velocidad", velocidad, self.RANGO_VELOCIDAD),
+            ("La vision", vision, self.RANGO_VISION),
+        ):
+            if not minimo <= valor <= maximo:
+                raise ValueError(f"{etiqueta} debe estar entre {minimo:g} y {maximo:g} (llego {valor:g})")
 
     # --- guardado y carga ---------------------------------------------------
 
@@ -195,6 +226,8 @@ class ConfigVida:
                 valor = {_a_dieta(d).value: float(v) for d, v in valor.items()}
             elif campo.name == _CAMPO_PLANTILLAS:
                 valor = {_a_dieta(d).value: [float(x) for x in t] for d, t in valor.items()}
+            elif campo.name in _CAMPOS_RANGO:
+                valor = [float(x) for x in valor]
             datos[campo.name] = valor
         return datos
 
@@ -219,6 +252,8 @@ class ConfigVida:
                     _a_dieta(d): tuple(float(x) for x in t) for d, t in valor.items()
                 }
                 kwargs[nombre] = {**base.PLANTILLAS, **convertido}
+            elif nombre in _CAMPOS_RANGO:
+                kwargs[nombre] = tuple(float(x) for x in valor)
             else:
                 kwargs[nombre] = valor
         return cls(**kwargs)
