@@ -13,7 +13,7 @@ El metabolismo se cobra DESPUES de actuar porque el costo de moverse depende de
 from __future__ import annotations
 
 from random import Random
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from .config import ConfigVida
 from .estadisticas import Estadisticas
@@ -78,6 +78,9 @@ class Criatura:
         self.vida_max = int(vida_max)
         self.viva = True
         self.causa_muerte: CausaMuerte | None = None
+        # Aviso opcional al morir (lo pone Poblacion para llevar la cuenta y los
+        # eventos al instante). No se guarda.
+        self.al_morir: Callable[["Criatura"], None] | None = None
 
     # --- creacion ---------------------------------------------------------------
 
@@ -290,6 +293,8 @@ class Criatura:
         self.viva = False
         self.estado = Estado.MUERTA
         self.causa_muerte = causa
+        if self.al_morir is not None:
+            self.al_morir(self)
 
     # --- guardado y carga -----------------------------------------------------------------
 

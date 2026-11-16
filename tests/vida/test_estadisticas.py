@@ -204,3 +204,15 @@ def test_desde_dict_con_datos_incompletos_o_invalidos_falla():
         Estadisticas.desde_dict({"tamano": 1.0, "velocidad": 1.0})
     with pytest.raises(ValueError):
         Estadisticas.desde_dict({"tamano": 0.0, "velocidad": 1.0, "vision": 4.0})
+
+
+def test_variar_multiplica_cada_rasgo_dentro_del_margen():
+    rng = random.Random(30)
+    base = Estadisticas(2.0, 1.0, 5.0)
+    vistos = set()
+    for _ in range(500):
+        e = base.variar(0.2, rng)
+        assert 1.6 <= e.tamano <= 2.4 and 0.8 <= e.velocidad <= 1.2 and 4.0 <= e.vision <= 6.0
+        vistos.add(e)
+    assert len(vistos) > 400
+    assert base.variar(0.0, rng) == base

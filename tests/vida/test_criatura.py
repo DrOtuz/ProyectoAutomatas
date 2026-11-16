@@ -502,3 +502,25 @@ def test_se_guarda_y_carga_una_criatura_muerta_sin_energia():
     copia = Criatura.desde_dict(json.loads(json.dumps(c.a_dict())), CFG)
     assert not copia.viva and copia.energia == 0.0
     assert copia.causa_muerte == CausaMuerte.HAMBRE and copia.estado == Estado.MUERTA
+
+
+def test_al_morir_avisa_una_sola_vez_y_ya_con_la_causa_puesta():
+    avisos = []
+    c = herbivoro()
+    c.al_morir = lambda x: avisos.append((x.id, x.viva, x.causa_muerte))
+    c.morir(CausaMuerte.FUEGO)
+    c.morir(CausaMuerte.HAMBRE)  # ya muerta: no vuelve a avisar
+    assert avisos == [(c.id, False, CausaMuerte.FUEGO)]
+
+
+def test_al_morir_tambien_avisa_si_muere_de_hambre_o_de_vejez_o_comida():
+    avisos = []
+    hambriento = herbivoro(energia=0.3)
+    viejo = herbivoro(vida_max=1)
+    presa = herbivoro()
+    for c in (hambriento, viejo, presa):
+        c.al_morir = lambda x: avisos.append(x.causa_muerte)
+    hambriento.cobrar_metabolismo(22)
+    viejo.envejecer()
+    carnivoro(especie="lobo").comer_presa(presa)
+    assert avisos == [CausaMuerte.HAMBRE, CausaMuerte.VEJEZ, CausaMuerte.DEPREDACION]

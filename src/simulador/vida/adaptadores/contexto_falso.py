@@ -38,6 +38,9 @@ class ContextoFalso:
             encontradas.extend(self._indice.get(casilla, ()))
         return encontradas
 
+    def ocupacion(self, pos: Pos) -> int:
+        return sum(1 for c in self._indice.get(pos, ()) if c.viva)
+
     def mover(self, criatura: Criatura, pos: Pos) -> None:
         self._indice[criatura.pos].remove(criatura)
         criatura.mover_a(pos)

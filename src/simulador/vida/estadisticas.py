@@ -60,12 +60,19 @@ class Estadisticas:
         Toma S, V y R de la plantilla de la dieta y multiplica cada rasgo por
         1 + uniforme(-VARIACION_INICIAL, +VARIACION_INICIAL).
         """
-        variacion = cfg.VARIACION_INICIAL
         s, v, r = cfg.PLANTILLAS[dieta]
-        return cls(
-            tamano=s * (1 + rng.uniform(-variacion, variacion)),
-            velocidad=v * (1 + rng.uniform(-variacion, variacion)),
-            vision=r * (1 + rng.uniform(-variacion, variacion)),
+        return cls(s, v, r).variar(cfg.VARIACION_INICIAL, rng)
+
+    def variar(self, variacion: float, rng: Random) -> "Estadisticas":
+        """Copia con cada rasgo multiplicado por 1 + uniforme(-variacion, +variacion).
+
+        Sirve para dar variacion individual a las criaturas iniciales de una
+        especie (la plantilla puede ser la de la configuracion o una propia).
+        """
+        return Estadisticas(
+            tamano=self.tamano * (1 + rng.uniform(-variacion, variacion)),
+            velocidad=self.velocidad * (1 + rng.uniform(-variacion, variacion)),
+            vision=self.vision * (1 + rng.uniform(-variacion, variacion)),
         )
 
     @classmethod

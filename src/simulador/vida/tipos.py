@@ -5,9 +5,8 @@ Criatura), asi que cualquier otro modulo puede importarlo sin ciclos.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, NamedTuple, Optional
 
 if TYPE_CHECKING:  # solo para anotaciones; evita un ciclo de importacion
     from .criatura import Criatura
@@ -74,10 +73,10 @@ class TipoObjetivo(Enum):
     AMENAZA = "amenaza"
 
 
-@dataclass(frozen=True)
-class Objetivo:
+class Objetivo(NamedTuple):
     """Un objetivo percibido: algo hacia lo que ir (o de lo que huir).
 
+    Inmutable (es una tupla con nombres: barata de crear, y se crean muchas por tick).
     `criatura` es None cuando el objetivo es una casilla (planta o fuego).
     `ganancia` es el porcentaje de energia que daria comerlo (0 si no aplica).
     `distancia` es la distancia de Chebyshev desde la criatura que percibe.

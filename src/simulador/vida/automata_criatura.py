@@ -44,6 +44,10 @@ class ContextoVida(Protocol):
         """Criaturas a distancia de Chebyshev <= radio (incluye la que esta en `pos`)."""
         ...
 
+    def ocupacion(self, pos: Pos) -> int:
+        """Criaturas vivas en la casilla, mas las crias que van a nacer ahi este tick."""
+        ...
+
     def mover(self, criatura: Criatura, pos: Pos) -> None:
         """Mueve a la criatura (actualiza su posicion y el indice por casilla)."""
         ...
@@ -103,7 +107,6 @@ class AutomataCriatura:
     ) -> Callable[[Pos], bool]:
         """Casilla a la que `criatura` puede entrar: dentro del mapa, transitable,
         sin fuego y con cupo (MAX_POR_CASILLA)."""
-        maximo = self.cfg.MAX_POR_CASILLA
 
         def libre(pos: Pos) -> bool:
             x, y = pos
@@ -111,10 +114,14 @@ class AutomataCriatura:
                 return False
             if mapa.hay_fuego(x, y):
                 return False
-            ocupantes = sum(1 for o in ctx.criaturas_en(pos) if o.viva and o is not criatura)
-            return ocupantes < maximo
+            return self._ocupantes(criatura, pos, ctx) < self.cfg.MAX_POR_CASILLA
 
         return libre
+
+    @staticmethod
+    def _ocupantes(c: Criatura, pos: Pos, ctx: ContextoVida) -> int:
+        """Otras criaturas (vivas o por nacer) en la casilla, sin contar a `c`."""
+        return ctx.ocupacion(pos) - (1 if c.pos == pos else 0)
 
     def percibir(self, c: Criatura, mapa: MapaPuerto, ctx: ContextoVida) -> Percepcion:
         """Todo lo visible dentro de `c.stats.radio_entero()`."""
@@ -138,21 +145,19 @@ class AutomataCriatura:
                 p.parejas.append(Objetivo(TipoObjetivo.PAREJA, otra.pos, otra, 0.0, d))
 
         if c.puede_comer_planta():
+            factor = c.eficiencia_planta() / c.stats.tamano  # ganancia % por unidad u
+            maximo = self.cfg.MAX_POR_CASILLA
+            px, py = c.pos
             for pos in mapa.buscar_en_radio(x, y, radio, TIPO_COMIDA):
-                if mapa.hay_fuego(*pos):
+                cx, cy = pos
+                biomasa = mapa.biomasa_en(cx, cy)
+                if biomasa <= 0 or mapa.hay_fuego(cx, cy):
                     continue
-                # no se puede entrar a una casilla ocupada por otra criatura
-                if any(o.viva and o is not c for o in ctx.criaturas_en(pos)):
+                # no se puede entrar a una casilla sin cupo
+                if ctx.ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
                     continue
-                biomasa = mapa.biomasa_en(*pos)
-                if biomasa <= 0:
-                    continue
-                p.plantas.append(
-                    Objetivo(
-                        TipoObjetivo.PLANTA, pos, None, c.ganancia_planta(biomasa),
-                        distancia(c.pos, pos),
-                    )
-                )
+                d = max(abs(cx - px), abs(cy - py))
+                p.plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, factor * biomasa, d))
         return p
 
     @staticmethod

@@ -2,7 +2,9 @@
 from .automata_criatura import AutomataCriatura, ContextoVida
 from .config import ConfigVida
 from .criatura import Criatura
+from .especie import Especie
 from .estadisticas import Estadisticas
+from .poblacion import EventoVida, Poblacion
 from .tipos import (
     CausaMuerte,
     Dieta,
@@ -20,7 +22,10 @@ __all__ = [
     "ConfigVida",
     "Criatura",
     "Dieta",
+    "Especie",
     "Estadisticas",
+    "EventoVida",
+    "Poblacion",
     "Estado",
     "EstadoEspecie",
     "Objetivo",

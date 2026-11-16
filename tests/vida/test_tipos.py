@@ -1,5 +1,3 @@
-import dataclasses
-
 import pytest
 
 from simulador.vida.tipos import (
@@ -34,5 +32,5 @@ def test_los_estados_del_automata():
 def test_objetivo_es_inmutable_y_tiene_valores_por_defecto():
     o = Objetivo(TipoObjetivo.PLANTA, (3, 4))
     assert o.criatura is None and o.ganancia == 0.0 and o.distancia == 0
-    with pytest.raises(dataclasses.FrozenInstanceError):
+    with pytest.raises(AttributeError):
         o.ganancia = 5  # type: ignore[misc]
