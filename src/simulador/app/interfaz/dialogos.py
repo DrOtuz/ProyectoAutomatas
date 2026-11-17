@@ -38,4 +38,3 @@ def mostrarSimulacionNoEncontrada(parent: QWidget | None) -> None:
     cuadro.setText("Esa simulación ya no existe. Actualizamos la lista para que veas las que sí están.")
     cuadro.addButton("Aceptar", QMessageBox.ButtonRole.AcceptRole)
     cuadro.exec()
-
