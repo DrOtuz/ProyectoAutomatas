@@ -340,6 +340,20 @@ class Poblacion:
         self._registrar(criatura)
         return criatura
 
+    def _estadisticas_medias(self, nombre: str) -> Estadisticas:
+        """S, V y R promedio de los individuos vivos de la especie; si no queda
+        ninguno (extinta), la plantilla con la que se creo."""
+        especie = self.especies[nombre]
+        vivas = [self._criaturas[i] for i in sorted(especie.ids)]
+        if not vivas:
+            return especie.plantilla
+        n = len(vivas)
+        return Estadisticas(
+            tamano=math.fsum(c.stats.tamano for c in vivas) / n,
+            velocidad=math.fsum(c.stats.velocidad for c in vivas) / n,
+            vision=math.fsum(c.stats.vision for c in vivas) / n,
+        )
+
     def agregar_individuos(
         self,
         nombre: str,
@@ -347,11 +361,14 @@ class Poblacion:
         mapa: MapaPuerto,
         posiciones: list[Pos] | None = None,
         energia: float | None = None,
+        promedio_actual: bool = False,
     ) -> int:
         """Agrega hasta `cantidad` criaturas a una especie ya creada.
 
-        Van a las `posiciones` dadas (las que sirvan) o a casillas libres al
-        azar. Respeta MAX_CRIATURAS y MAX_POR_CASILLA. Devuelve cuantas agrego.
+        Nacen con la plantilla de la especie o, con `promedio_actual`, con los
+        S, V y R promedio de sus vivos (si esta extinta, la plantilla); en ambos
+        casos con la variacion inicial. Van a las `posiciones` dadas (las que
+        sirvan) o a casillas libres al azar. Respeta MAX_CRIATURAS y MAX_POR_CASILLA. Devuelve cuantas agrego.
         """
         if nombre not in self.especies:
             raise KeyError(nombre)
@@ -360,13 +377,14 @@ class Poblacion:
         cupo = max(0, self.cfg.MAX_CRIATURAS - self._n_vivas - len(self._nacimientos))
         objetivo = min(cantidad, cupo)
         agregadas = 0
+        base = self._estadisticas_medias(nombre) if promedio_actual else self.especies[nombre].plantilla
 
         if posiciones is not None:
             for pos in posiciones:
                 if agregadas >= objetivo:
                     break
                 if self._casilla_libre(mapa, pos):
-                    self.agregar_criatura(nombre, pos, energia)
+                    self.agregar_criatura(nombre, pos, energia, base.variar(self.cfg.VARIACION_INICIAL, self.rng))
                     agregadas += 1
             return agregadas
 
@@ -375,7 +393,7 @@ class Poblacion:
             intentos -= 1
             pos = (self.rng.randrange(mapa.ancho), self.rng.randrange(mapa.alto))
             if self._casilla_libre(mapa, pos):
-                self.agregar_criatura(nombre, pos, energia)
+                self.agregar_criatura(nombre, pos, energia, base.variar(self.cfg.VARIACION_INICIAL, self.rng))
                 agregadas += 1
         if agregadas < objetivo:  # mapa casi lleno: revisa todas las casillas
             todas = [(x, y) for y in range(mapa.alto) for x in range(mapa.ancho)]
@@ -384,7 +402,7 @@ class Poblacion:
                 if agregadas >= objetivo:
                     break
                 if self._casilla_libre(mapa, pos):
-                    self.agregar_criatura(nombre, pos, energia)
+                    self.agregar_criatura(nombre, pos, energia, base.variar(self.cfg.VARIACION_INICIAL, self.rng))
                     agregadas += 1
         return agregadas
 

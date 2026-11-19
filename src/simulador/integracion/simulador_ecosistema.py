@@ -403,7 +403,9 @@ class SimuladorEcosistema(Motor):
                 plantilla=plantilla, color=str(self._colores[id_]),
             )  # fmt: skip
         elif isinstance(c, cmd.AgregarCriaturas):
-            self.poblacion.agregar_individuos(self._nombres[c.especie_id], c.cantidad, self._mapa_vida)
+            self.poblacion.agregar_individuos(
+                self._nombres[c.especie_id], c.cantidad, self._mapa_vida, promedio_actual=c.promedio_actual
+            )
         elif isinstance(c, cmd.EliminarCriaturas):
             self.poblacion.eliminar_criaturas(self._nombres[c.especie_id], c.cantidad)
         elif isinstance(c, cmd.ExtinguirEspecie):

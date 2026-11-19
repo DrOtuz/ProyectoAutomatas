@@ -157,7 +157,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             self._crear.volverLista.connect(lambda: self._pila.setCurrentWidget(self._lista))
             self._crear.crearEspecieSolicitado.connect(self._crearEspecie)
             self._detalle.volverLista.connect(self._volverALista)
-            self._detalle.agregarCriaturasSolicitado.connect(lambda i, n: ejecutor.enviar(AgregarCriaturas(i, n)))
+            self._detalle.agregarCriaturasSolicitado.connect(lambda i, n, p: ejecutor.enviar(AgregarCriaturas(i, n, p)))
             self._detalle.eliminarCriaturasSolicitado.connect(lambda i, n: ejecutor.enviar(EliminarCriaturas(i, n)))
             self._detalle.extinguirEspecieSolicitado.connect(lambda i: ejecutor.enviar(ExtinguirEspecie(i)))
             self._detalle.eliminarEspecieSolicitado.connect(self._eliminarEspecie)
@@ -191,7 +191,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             viejo = self._detalle
             nuevo = DetalleEspecieWidget()
             nuevo.volverLista.connect(self._volverALista)
-            nuevo.agregarCriaturasSolicitado.connect(lambda i, n: self._ejecutor.enviar(AgregarCriaturas(i, n)))
+            nuevo.agregarCriaturasSolicitado.connect(lambda i, n, p: self._ejecutor.enviar(AgregarCriaturas(i, n, p)))
             nuevo.eliminarCriaturasSolicitado.connect(lambda i, n: self._ejecutor.enviar(EliminarCriaturas(i, n)))
             nuevo.extinguirEspecieSolicitado.connect(lambda i: self._ejecutor.enviar(ExtinguirEspecie(i)))
             nuevo.eliminarEspecieSolicitado.connect(self._eliminarEspecie)

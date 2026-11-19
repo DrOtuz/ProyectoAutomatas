@@ -58,10 +58,14 @@ class CrearEspecie:
 
 @dataclass(frozen=True)
 class AgregarCriaturas:
-    """Agrega criaturas a una especie activa, hasta el cupo."""
+    """Agrega criaturas a una especie activa, hasta el cupo.
+
+    Con `promedio_actual` nacen con los S, V y R promedio de la especie en ese
+    momento; si no, con la plantilla con la que se creo la especie."""
 
     especie_id: int
     cantidad: int
+    promedio_actual: bool = False
 
 
 @dataclass(frozen=True)
