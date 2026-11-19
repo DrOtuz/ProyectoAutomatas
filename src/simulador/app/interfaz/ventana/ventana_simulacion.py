@@ -229,6 +229,7 @@ class VentanaSimulacion(QMainWindow):
         instantanea = self._ejecutor.obtenerInstantanea()
         self.visor.actualizarInstantanea(instantanea)
         self.barra_estado.actualizar(instantanea)
+        self._avisarGuardado()
         self.panel_eventos.actualizarEventos(instantanea.eventos)
         errores = self._ejecutor.tomarErrores()
         if errores:  # el motor rechazo una orden: se le dice al usuario por que
@@ -280,7 +281,20 @@ class VentanaSimulacion(QMainWindow):
 
     def _onGuardar(self) -> None:
         if hasattr(self._ejecutor, "solicitarGuardado"):
+            self._guardados_vistos = getattr(self._ejecutor, "numero_guardados", 0)
+            self._esperando_guardado = True
+            self.btn_guardar.setText("💾 Guardando…")
             self._ejecutor.solicitarGuardado()
+
+    def _avisarGuardado(self) -> None:
+        """Cuando el hilo del motor termina de guardar, el boton lo confirma unos segundos."""
+        if not getattr(self, "_esperando_guardado", False):
+            return
+        if getattr(self._ejecutor, "numero_guardados", 0) > self._guardados_vistos:
+            self._esperando_guardado = False
+            tick = getattr(self._ejecutor, "ultimo_tick_guardado", 0)
+            self.btn_guardar.setText(f"✔ Guardado (tick {tick})")
+            QTimer.singleShot(3000, lambda: self.btn_guardar.setText("💾 Guardar"))
 
     def _onRenombrar(self) -> None:
         nuevo_nombre, ok = QInputDialog.getText(

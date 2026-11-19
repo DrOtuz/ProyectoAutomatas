@@ -81,7 +81,7 @@ FUEGO = {
 # que regenera 2 u/tick). El resto es provisional y A debe confirmarlo o reemplazarlo.
 VEGETACION = {
     "alimento_maximo": {"pasto": 30.0, "arbol": 60.0},
-    "regeneracion": {"pasto": 1.0, "arbol": 2.0},
+    "regeneracion": {"pasto": 0.5, "arbol": 1.0},
     # probabilidad por tick de pasar de tierra a pasto y de pasto a arbol (con nutrientes 50
     # y crecimiento 1.0)
     "probabilidad_crecer": {"tierra": 0.002, "pasto": 0.0005},
