@@ -2,7 +2,7 @@
 <!-- Una o dos frases. Qué hace este PR y por qué. -->
 
 ## Tarea y requisitos
-- Tarea: <!-- por ejemplo A-13 -->
+- Tarea: <!-- descripción corta o enlace a la issue (opcional) -->
 - Requisitos que cubre: <!-- por ejemplo RF-14, RNF-03 -->
 
 ## Antes de pedir revisión

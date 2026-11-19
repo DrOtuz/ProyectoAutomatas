@@ -10,11 +10,15 @@
 /src/simulador/configuracion/               @Juan-var-camp
 /tests/app/                                 @Juan-var-camp
 /docs/app.md                                @Juan-var-camp
+/docs/arquitectura.md                        @Juan-var-camp @DrOtuz @MrMishaelysium
 /.github/                                   @Juan-var-camp
 /scripts/                                   @Juan-var-camp
 /README.md                                  @Juan-var-camp
 /pyproject.toml                             @Juan-var-camp
 /requirements.txt                           @Juan-var-camp
+/requirements-dev.txt                       @Juan-var-camp
+/ejecutar.bat                               @Juan-var-camp
+/ejecutar.sh                                @Juan-var-camp
 
 # Ecosistema 
 /src/simulador/ecosistema/                  @MrMishaelysium

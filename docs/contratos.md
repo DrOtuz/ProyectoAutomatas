@@ -1,555 +1,112 @@
-# CONTRATOS ENTRE SUBGRUPOS
+# Contratos entre subgrupos
 
-# Proposito
-definir qué funciones y atributos ofrece cada subgrupo a los demás, para trabajar en paralelo sin esperarnos. Este documento dice cómo se usa cada función, no cómo funciona por dentro.
+Definen qué ofrece cada grupo a los demás, para trabajar en paralelo sin esperarse. Este documento dice **cómo se usa** cada pieza, no cómo funciona por dentro. El código está en `src/simulador/contratos/` (y en `vida/puertos.py` para el mapa).
 
----
+## Reglas de redacción y nomenclatura
 
-# Plantilla
-
-### Clase.funcion
-- **Firma:** `funcion(parametro: tipo) -> tipo`
-- **Descripción:** pocas lineas.
-- **Parámetros:** significado de cada uno.
-- **Retorno:** qué devuelve.
-- **Errores:** qué pasa si se usa mal.
+- Nombres en español, sin tildes ni eñes en el código (en comentarios y documentos sí).
+- Clases en `PascalCase`, funciones y métodos en `camelCase`, atributos y variables en `snake_case`, constantes en `MAYUSCULAS_CON_GUION_BAJO`, miembros de `Enum` en minúscula.
+- Solo se documenta lo que **cruza fronteras** entre grupos.
+- Un cambio de firma o de comportamiento de un contrato requiere discusión previa y la aprobación de los tres líderes (ver `.github/CODEOWNERS`).
+- Todo error propio hereda de `ErrorSimulador`.
 
 ---
 
-### Clase.atributo
-- **Firma:** `nombre_atributo: tipo`
-- **Descripción:** pocas lineas.
+## Aplicación ⇄ motor
+
+### `Motor` (clase abstracta, `contratos/motor.py`)
+
+Lo que la aplicación puede pedirle a la simulación. La implementan `SimuladorEcosistema` (motor real) y `MotorFalso` (para probar la interfaz). Se usa siempre desde **un solo hilo** (el del Ejecutor).
+
+| Método | Descripción |
+|---|---|
+| `avanzar() -> list[Aviso]` | Avanza un tick y devuelve los avisos ocurridos. |
+| `aplicar(comando)` | Valida y ejecuta o encola un comando. Lanza `ComandoInvalido` si trae valores incorrectos (sin cambiar nada) y `ComandoNoSoportado` si el motor no lo implementa. |
+| `obtenerInstantanea() -> Instantanea` | Estado visible actual, de solo lectura. |
+| `aEstado() -> bytes` | Estado completo serializado (JSON canónico comprimido, con versión). |
+| `huellaEstado() -> str` | SHA-256 del estado canónico. Mismo estado, misma huella. |
+| `desdeEstado(estado: bytes) -> Motor` | Método de clase: reconstruye un motor desde `aEstado`. |
+
+### Comandos (`contratos/comandos.py`)
+
+Dataclasses inmutables.
+
+| Comando | Campos | Efecto |
+|---|---|---|
+| `FijarNutrientes` | `nivel` (0–100) | Nivel global de nutrientes; actúa desde el tick siguiente. |
+| `ProvocarEvento` | `tipo`, `foco_x`, `foco_y`, `radio` (0–3) | Provoca sequía, lluvia o incendio. El incendio usa el foco (si falta, el motor elige una casilla inflamable al azar). Rechaza un evento del mismo tipo que uno activo. |
+| `CancelarEvento` | `tipo` | Termina el evento activo al inicio del tick siguiente. |
+| `CrearEspecie` | `nombre`, `cantidad`, `dieta` (`herbivoro`/`omnivoro`/`carnivoro`), `genes` opcional `(tamano, velocidad, vision)` | Crea la especie y coloca sus criaturas. |
+| `AgregarCriaturas` | `especie_id`, `cantidad`, `promedio_actual` | Suma individuos hasta el cupo. Con `promedio_actual=True` nacen con los promedios actuales de la especie; si no, con su plantilla original. |
+| `EliminarCriaturas` | `especie_id`, `cantidad` | Retira criaturas al azar. |
+| `ExtinguirEspecie` | `especie_id` | Retira todas; la especie sigue en la lista como extinguida. |
+| `EliminarEspecie` | `especie_id` | Elimina la especie y su historial; su nombre queda bloqueado. |
+
+`TipoEvento` es `sequia`, `lluvia` o `incendio`.
+
+### `Instantanea` (`contratos/instantanea.py`)
+
+Estado visible en un tick. Los arreglos de NumPy se marcan como no escribibles y el motor entrega copias.
+
+| Campo | Contenido |
+|---|---|
+| `tick`, `estacion`, `temperatura`, `nutrientes`, `cupo` | Reloj y datos globales. |
+| `terreno` | Arreglo 100 × 100 `uint8` con códigos de `EstadoCasilla`: tierra 0, agua 1, pasto 2, árbol 3, llamas 4, quemada 5. |
+| `criaturas` | Arreglo n × 3 `int32`: x, y, `especie_id`. |
+| `especies` | Tuple de `InfoEspecie`: `especie_id`, `nombre`, `color` (índice de la paleta de 12), `poblacion`, `extinguida` y, si el motor los da, promedios de `tamano`, `velocidad`, `vision` y `energia`. |
+| `eventos` | Tuple de `InfoEvento`: `tipo`, `ticks_restantes` (sequía y lluvia) o `casillas_en_llamas` (incendio). |
+
+### Avisos (`contratos/avisos.py`)
+
+Devueltos por `avanzar()`: `EventoNaturalIniciado(tipo, origen, tick)`, `EventoNaturalTerminado(tipo, tick, cancelado)`, `CupoAlcanzado(tick, cupo)` y `EspecieExtinguida(especie_id, nombre, tick)`. `OrigenEvento` es `natural` o `manual`.
+
+### Errores (`contratos/errores.py`)
+
+`ErrorSimulador` (base), `ComandoInvalido`, `ComandoNoSoportado`, `NombreInvalido`, `SimulacionNoEncontrada`.
+
+### `Almacenamiento` (`contratos/almacenamiento.py`)
+
+Biblioteca de simulaciones guardadas. Implementaciones: `AlmacenamientoSqlite` y `AlmacenamientoMemoria` (pruebas); una misma batería de pruebas corre contra ambas.
+
+| Método | Descripción |
+|---|---|
+| `crear(nombre, estado, tick, velocidad)` | Guarda una simulación nueva y devuelve su `ResumenSimulacion`. |
+| `guardar(simulacion_id, estado, tick, velocidad)` | Reemplaza el estado guardado. |
+| `cargar(simulacion_id) -> bytes` | Devuelve el estado guardado. |
+| `listar() -> list[ResumenSimulacion]` | Simulaciones guardadas. |
+| `renombrar(simulacion_id, nombre)` / `eliminar(simulacion_id)` | Gestión de la biblioteca. |
+
+`validarNombre(nombre, largo_maximo)`: de 1 a 60 caracteres y sin espacios en los extremos; no puede repetirse otro nombre sin distinguir mayúsculas. `ResumenSimulacion`: `simulacion_id`, `nombre`, `tick`, `fecha_guardado`, `velocidad`.
 
 ---
 
-# Reglas de redacción
- - Nombres en español, sin tildes ni eñes.
- - Clases en `PascalCase`.
- - Funciones/métodos en `camelCase`.
- - Atributos/variables en `snake_case`.
- - Solo se documenta lo que cruza fronteras.
- - Escribir todas los métodos y atributos pertenecientes a una clase juntos (primero atributos y luego métodos).
- - Organizar alfabéticamente las clases a lo largo de cada sección de este documento.
-
- ---
-
-# Grupo Ecosistema -> Grupo Vida
-# Clase: `Casilla`
-
-Representa una unidad espacial dentro del ecosistema simulado. Maneja su propio estado ecológico, humedad, cantidad de alimento y su transición temporal entre diferentes estados (ej. quemada, tierra, pasto, árbol).
-
-## Atributos
-
-| Atributo | Tipo | Descripción |
-| :--- | :--- | :--- |
-| `tipo` | `EstadoCasilla` | Estado actual del terreno en la casilla. |
-| `coordenada` | `tuple` | Posición (x, y) de la casilla dentro de la matriz del ecosistema. |
-| `humedad` | `float` | Nivel de humedad presente en la casilla. |
-| `alimento` | `int` / `float` | Cantidad de alimento disponible en esta coordenada. |
-| `tick_quemada` | `int` | Registro del instante de tiempo (`tick`) en el que la casilla fue quemada. |
-
-## Métodos
-
-### Getters
-* **`getTipo() -> EstadoCasilla`**
-  Obtiene el tipo actual de la casilla.
-* **`getHumedad() -> float`**
-  Retorna el valor de la humedad actual.
-
-### Modificadores de Estado
-* **`quemar() -> None`**
-  Registra el `tick_actual` en `tick_quemada` y cambia el estado de la casilla a `quemada`.
-* **`regenerar() -> None`**
-  Si la casilla está quemada y ha pasado el tiempo necesario (`ticks_para_regenerar`), su estado vuelve a ser `tierra`.
-* **`evolucionar() -> None`**
-  Avanza el estado ecológico de la casilla: de `tierra` pasa a `pasto`, y de `pasto` pasa a `arbol`.
-* **`involucionar() -> None`**
-  Retrocede el estado ecológico de la casilla: de `arbol` pasa a `pasto`, y de `pasto` pasa a `tierra`.
-
-  # Documentacion: eventos ambientales globales
-
-Modulo: `src/simulador/ecosistema/eventos.py`
-Parametros: seccion `EVENTOS` de `configuracion/ecosistema.py`
-Requisitos: RF-28, RF-29, RF-30, RF-31, RF-51
-
----
-
-### EventoNatural.duracion
-- **Firma:** `duracion: int`
-- **Descripcion:** ticks totales que dura el evento.
-
-### EventoNatural.origen
-- **Firma:** `origen: str`
-- **Descripcion:** `"natural"` si salio del sorteo, `"manual"` si lo provoco el usuario.
-
-### EventoNatural.tick_inicio
-- **Firma:** `tick_inicio: int`
-- **Descripcion:** tick en que el evento empezo.
-
-### EventoNatural.ticks_restantes
-- **Firma:** `ticks_restantes: int`
-- **Descripcion:** ticks que faltan para que el evento termine.
-
-### EventoNatural.tipo
-- **Firma:** `tipo: str`
-- **Descripcion:** `"sequia"` o `"lluvia"`.
-
----
-
-### GestorEventos.esta_en_sequia
-- **Firma:** `esta_en_sequia: bool`
-- **Descripcion:** `True` si hay una sequia activa en el tick actual. Se actualiza en cada llamada a `paso`.
-
-### GestorEventos.esta_lloviendo
-- **Firma:** `esta_lloviendo: bool`
-- **Descripcion:** `True` si hay una lluvia activa en el tick actual. Se actualiza en cada llamada a `paso`.
-
-### GestorEventos.eventos_activos
-- **Firma:** `eventos_activos: list[EventoNatural]`
-- **Descripcion:** eventos activos en el tick actual. Sirve para la etiqueta de eventos de la interfaz.
-
-### GestorEventos.cancelarEvento
-- **Firma:** `cancelarEvento(tipo: str) -> None`
-- **Descripcion:** cancela un evento activo. Termina al inicio del tick siguiente (RF-51).
-- **Parametros:** `tipo`: `"sequia"` o `"lluvia"`.
-- **Retorno:** nada.
-- **Errores:** `ErrorSimulador` si no hay un evento activo de ese tipo.
-
-### GestorEventos.factorCrecimiento
-- **Firma:** `factorCrecimiento() -> float`
-- **Descripcion:** factor que multiplica el crecimiento de la vegetacion segun el evento activo.
-- **Parametros:** ninguno.
-- **Retorno:** 0.3 con sequia, 1.5 con lluvia, 1.0 sin evento.
-- **Errores:** ninguno.
-
-### GestorEventos.modificadorHumedad
-- **Firma:** `modificadorHumedad() -> float`
-- **Descripcion:** valor que se suma a la humedad de cada casilla segun el evento activo.
-- **Parametros:** ninguno.
-- **Retorno:** -0.35 con sequia, +0.35 con lluvia, 0.0 sin evento.
-- **Errores:** ninguno.
-
-### GestorEventos.modificadorTemperatura
-- **Firma:** `modificadorTemperatura() -> float`
-- **Descripcion:** grados que se suman a la temperatura base mientras haya sequia.
-- **Parametros:** ninguno.
-- **Retorno:** +3.0 con sequia, 0.0 en otro caso.
-- **Errores:** ninguno.
-
-### GestorEventos.paso
-- **Firma:** `paso(tick: int, estacion: str, ticks_por_estacion: int) -> bool`
-- **Descripcion:** paso 2 del tick. Termina eventos vencidos o cancelados, aplica los provocados, sortea sequia y lluvia naturales, actualiza `esta_en_sequia` y `esta_lloviendo`, y sortea el foco natural de incendio. Siempre consume 5 numeros del generador aleatorio.
-- **Parametros:** `tick`: tick actual. `estacion`: `"primavera"`, `"verano"`, `"otono"` o `"invierno"`. `ticks_por_estacion`: duracion de una estacion en ticks.
-- **Retorno:** `True` si hay un foco natural de incendio este tick, para quien maneje el fuego.
-- **Errores:** `KeyError` si `estacion` no esta en la configuracion.
-
-### GestorEventos.provocarEvento
-- **Firma:** `provocarEvento(tipo: str) -> None`
-- **Descripcion:** provoca un evento a mano (RF-28). Se activa al inicio del tick siguiente. Sequia y lluvia no coexisten: provocar uno termina el otro (RF-31).
-- **Parametros:** `tipo`: `"sequia"` o `"lluvia"`.
-- **Retorno:** nada.
-- **Errores:** `ErrorSimulador` si el tipo es invalido o ya hay un evento activo del mismo tipo.
-
-### GestorEventos.__init__
-- **Firma:** `GestorEventos(rng, config=None)`
-- **Descripcion:** crea el gestor sin eventos activos.
-- **Parametros:** `rng`: generador unico de la simulacion (`Simulation._rng`). `config`: diccionario `EVENTOS`; si es `None` se lee de `configuracion/ecosistema.py`.
-- **Retorno:** instancia de `GestorEventos`.
-- **Errores:** ninguno.
-
-# Grupo Ecosistema -> Grupo App
-
-Ecosistema entrega a App la implementacion concreta del motor (`Simulacion`), el estado celular ensamblado en la `Instantanea` y el acceso de lectura para inspeccion de casillas.
-
-### Simulacion.aEstado
-- **Firma:** `aEstado() -> bytes`
-- **Descripcion:** serializa el estado completo del mundo (mapa, clima, eventos, especies, criaturas y generador) a un bloque de bytes autodescrito.
-- **Parametros:** ninguno.
-- **Retorno:** bytes del estado completo.
-- **Errores:** `ErrorSimulador` si ocurre un fallo al serializar.
-
-### Simulacion.aplicar
-- **Firma:** `aplicar(comando: Comando) -> None`
-- **Descripcion:** recibe un comando de la aplicacion y lo encola para aplicarlo al inicio del tick siguiente.
-- **Parametros:** `comando` instancia de comando (`FijarNutrientes`, `ProvocarEvento`, `CancelarEvento`, etc.).
-- **Retorno:** nada.
-- **Errores:** `ComandoInvalido` si los parametros no son validos; `ComandoNoSoportado` si la accion no esta disponible.
-
-### Simulacion.avanzar
-- **Firma:** `avanzar() -> list[Aviso]`
-- **Descripcion:** ejecuta un paso completo de la simulacion (11 pasos del tick) y devuelve los avisos ocurridos.
-- **Parametros:** ninguno.
-- **Retorno:** lista de instancias de `Aviso` generadas en ese tick.
-- **Errores:** `ErrorSimulador` si ocurre una violacion de invariantes.
-
-### Simulacion.desdeEstado
-- **Firma:** `desdeEstado(estado: bytes) -> Simulacion` (metodo de clase)
-- **Descripcion:** reconstruye una simulacion completa a partir de los bytes producidos por `aEstado`.
-- **Parametros:** `estado`: bloque de bytes con cabecera de version.
-- **Retorno:** instancia de `Simulacion` lista para ejecutarse.
-- **Errores:** `ErrorSimulador` si el formato o version es incompatible.
-
-### Simulacion.huellaEstado
-- **Firma:** `huellaEstado() -> str`
-- **Descripcion:** hash criptografico o numerico del estado total del motor para verificacion de determinismo y prueba de oro.
-- **Parametros:** ninguno.
-- **Retorno:** cadena hexadecimal representativa de la huella.
-
-### Simulacion.inspeccionarCasilla
-- **Firma:** `inspeccionarCasilla(x: int, y: int) -> dict`
-- **Descripcion:** devuelve la informacion detallada de una celda del mapa para el widget inspector de la interfaz.
-- **Parametros:** `x`: columna (0 a 99), `y`: fila (0 a 99).
-- **Retorno:** diccionario con claves `estado`, `humedad`, `alimento`, `tick_quemada` y `en_llamas`.
-- **Errores:** `ErrorSimulador` si las coordenadas estan fuera de limites.
-
-### Simulacion.obtenerInstantanea
-- **Firma:** `obtenerInstantanea() -> Instantanea`
-- **Descripcion:** genera una instantanea inmutable con arreglos de solo lectura para que la interfaz dibuje el mapa y la barra de estado.
-- **Parametros:** ninguno.
-- **Retorno:** objeto inmutable `Instantanea`.
-
----
-
-# Grupo Vida -> Grupo Ecosistema
-
-Vida define los contratos que necesita del mapa (`MapaPuerto`) para desacoplar su logica de criaturas de la matriz celular, y entrega a Ecosistema la actualizacion del ciclo de vida de la poblacion.
-
-### MapaPuerto.alto
-- **Firma:** `alto: int`
-- **Descripcion:** cantidad de filas del mapa.
-
-### MapaPuerto.ancho
-- **Firma:** `ancho: int`
-- **Descripcion:** cantidad de columnas del mapa.
-
-### MapaPuerto.biomasa_en
-- **Firma:** `biomasa_en(x: int, y: int) -> float`
-- **Descripcion:** cantidad de alimento o biomasa vegetal disponible en la casilla (en unidades u).
-- **Parametros:** `x`: columna, `y`: fila.
-- **Retorno:** biomasa disponible (0.0 si no hay alimento o es agua/tierra).
-
-### MapaPuerto.buscar_en_radio
-- **Firma:** `buscar_en_radio(x: int, y: int, radio: int, tipo: str) -> list[tuple[int, int]]`
-- **Descripcion:** devuelve las coordenadas dentro del radio Chebyshev que cumplen el tipo especificado (`"comida"` para biomasa > 0, `"fuego"` para casillas en llamas).
-- **Parametros:** `x`, `y`: centro de busqueda; `radio`: distancia Chebyshev; `tipo`: `"comida"` o `"fuego"`.
-- **Retorno:** lista de tuplas `(x, y)` ordenadas de manera determinista.
-
-### MapaPuerto.consumir_biomasa
-- **Firma:** `consumir_biomasa(x: int, y: int) -> float`
-- **Descripcion:** consume el alimento presente en la casilla y retorna cuantas unidades habia.
-- **Parametros:** `x`: columna, `y`: fila.
-- **Retorno:** unidades consumidas (float).
-
-### MapaPuerto.en_limites
-- **Firma:** `en_limites(x: int, y: int) -> bool`
-- **Descripcion:** comprueba si la coordenada se encuentra dentro de los limites del mapa.
-- **Parametros:** `x`: columna, `y`: fila.
-- **Retorno:** `True` si es valida, `False` en caso contrario.
-
-### MapaPuerto.es_transitable
-- **Firma:** `es_transitable(x: int, y: int) -> bool`
-- **Descripcion:** comprueba si una criatura puede ocupar la casilla (tierra, pasto, arbol y quemada son transitables; agua es intransitable).
-- **Parametros:** `x`: columna, `y`: fila.
-- **Retorno:** `True` si se puede pisar, `False` si es obstaculo.
-
-### MapaPuerto.hay_fuego
-- **Firma:** `hay_fuego(x: int, y: int) -> bool`
-- **Descripcion:** indica si la casilla esta ardiendo en llamas en el tick actual.
-- **Parametros:** `x`: columna, `y`: fila.
-- **Retorno:** `True` si tiene fuego activo, `False` si no.
-
----
-
-### Poblacion.actualizar
-- **Firma:** `actualizar(mapa: MapaPuerto, temperatura: float) -> list[EventoVida]`
-- **Descripcion:** ejecuta los pasos de vida de las criaturas (pasos 6 a 10): percepcion, toma de decisiones, movimiento, alimentacion, depredacion, reproduccion, metabolismo y muertes.
-- **Parametros:** `mapa`: instancia que satisface `MapaPuerto`; `temperatura`: temperatura ambiental en °C.
-- **Retorno:** lista de eventos ocurridos (`EventoVida`).
-
-### Poblacion.serializar
-- **Firma:** `serializar() -> dict`
-- **Descripcion:** convierte el estado completo de especies, criaturas vivas e historial a una estructura reproducible para guardado atomico.
-- **Parametros:** ninguno.
-- **Retorno:** diccionario serializable.
-
-### Poblacion.snapshot
-- **Firma:** `snapshot() -> dict`
-- **Descripcion:** entrega las posiciones y metadatos de las criaturas vivas y especies para ensamblar en `Instantanea`.
-- **Parametros:** ninguno.
-- **Retorno:** diccionario indexado por especie con conteos y coordenadas.
-
----
-
-# Grupo Vida -> Grupo App
-
-Vida provee a la aplicacion la informacion detallada de especies para dialogos y graficas, y la inspeccion de criaturas individuales para el visor.
-
-### GestorHistorial.obtenerSerie
-- **Firma:** `obtenerSerie(nombre_especie: str, metrica: str) -> list[tuple[int, float]]`
-- **Descripcion:** devuelve la serie temporal de pares `(tick, valor)` para graficar en `DetalleEspecieDialog` con `pyqtgraph`.
-- **Parametros:** `nombre_especie`: identificador de la especie; `metrica`: `"poblacion"`, `"tamano"`, `"velocidad"` o `"vision"`.
-- **Retorno:** lista de tuplas `(tick, valor)`.
-- **Errores:** `KeyError` si la especie o metrica no existe.
-
-### GestorHistorial.reducirSiExcede
-- **Firma:** `reducirSiExcede(max_puntos: int) -> None`
-- **Descripcion:** reduce a la mitad la resolucion de las muestras antiguas cuando la serie sobrepasa el limite de almacenamiento.
-- **Parametros:** `max_puntos`: umbral maximo de muestras (ej. 5000).
-- **Retorno:** nada.
-
-### Poblacion.inspeccionarCriatura
-- **Firma:** `inspeccionarCriatura(criatura_id: int) -> dict`
-- **Descripcion:** extrae los atributos vitales y geneticos de una criatura para mostrarlos en el inspector lateral de la ventana de simulacion.
-- **Parametros:** `criatura_id`: identificador unico de la criatura.
-- **Retorno:** diccionario con claves `id`, `especie`, `posicion`, `velocidad`, `fuerza`, `vision`, `tamano`, `saciedad`, `hidratacion`, `espera_reproduccion`, `edad` y `estado_automata`.
-- **Errores:** `ErrorSimulador` si la criatura no existe o esta muerta.
-
-# Grupo App -> Grupo Ecosistema
-
-Estos contratos viven en `src/simulador/contratos/`. Los define App y los cumple el motor (Ecosistema y Vida). Las clases de datos son `dataclass(frozen=True)`: no se modifican después de crearlas. El motor no importa nada de `simulador.app`.
-
-**Convenciones generales**
-- La aplicación habla con el motor solo mediante `Motor`: manda comandos con `aplicar`, avanza con `avanzar` y lee el estado con `obtenerInstantanea`.
-- Un comando se aplica al inicio del siguiente `avanzar`, nunca a mitad de un tick.
-- Las excepciones heredan de `ErrorSimulador`.
-- El estado guardado es un `bytes` opaco: solo el motor sabe interpretarlo.
-
-
-**Formato de guardado** (RFC A-1)
-- La biblioteca es un archivo SQLite (`biblioteca.db`) con una tabla `simulaciones`: `id`, `nombre`, `nombre_clave` (nombre en minúsculas, único), `tick`, `velocidad`, `fecha_guardado` y `estado`.
-- El estado es **un único bloque de bytes** (D-35): el resultado de `Motor.aEstado()`. App lo guarda y lo devuelve sin leerlo ni modificarlo.
-- Debe contener todo lo necesario para dejar la simulación idéntica (RF-49): mapa, clima, eventos activos, especies, criaturas, historial por especie y estado del generador aleatorio. La prueba es que `huellaEstado()` antes de guardar y después de cargar coincide.
-- Debe ser **autodescrito**: lleva al principio su propia versión de formato, para que el motor pueda leer guardados antiguos o rechazar uno desconocido. `desdeEstado` lanza `ErrorSimulador` si no puede leerlo. **(Propuesta: Ecosistema define la cabecera.)**
-- Hay **dos versiones independientes**: la del esquema de SQLite, que cuida App (hoy es la 1; un archivo de una versión más nueva se rechaza sin dañarlo), y la del formato del estado, que cuida el motor.
-- La escritura es atómica (RF-50): un guardado se aplica entero o no se aplica, y un corte a mitad deja válida la versión anterior.
-- El guardado ocupa menos de 20 MB con 1000 criaturas y 5000 muestras por especie (RNF-09).
-- **Pregunta abierta, historial por especie:** D-35 lo pone en una tabla aparte (sería el esquema 2), pero eso exige que Vida lo entregue por un método del contrato que todavía no existe (RF-46, propuesta). **Propuesta mientras tanto:** el motor incluye el historial dentro del estado, y se migra a la tabla cuando exista el método.
----
-
-### Almacenamiento
-- **Firma:** `Almacenamiento(ABC)`
-- **Descripción:** biblioteca de simulaciones guardadas en el equipo, sin cuentas ni propietarios. La aplicación la usa para guardar y cargar; el estado del motor viaja como `bytes` sin que el almacenamiento lo interprete. Implementaciones: `AlmacenamientoSqlite` (archivo) y `AlmacenamientoMemoria` (pruebas).
-- **Métodos:**
-
-#### Almacenamiento.cargar
-- **Firma:** `cargar(simulacion_id: int) -> bytes`
-- **Descripción:** devuelve el estado guardado, tal como se guardó.
-- **Errores:** `SimulacionNoEncontrada` si no existe.
-
-#### Almacenamiento.crear
-- **Firma:** `crear(nombre: str, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion`
-- **Descripción:** guarda una simulación nueva.
-- **Parámetros:** `nombre` de 1 al largo máximo configurado (60 por defecto), sin espacios al inicio ni al final y único sin distinguir mayúsculas; `estado` son los bytes de `Motor.aEstado()`; `tick` y `velocidad` son los de la simulación.
-- **Retorno:** el resumen de la simulación creada.
-- **Errores:** `NombreInvalido` si el nombre no vale o ya existe.
-
-#### Almacenamiento.eliminar
-- **Firma:** `eliminar(simulacion_id: int) -> None`
-- **Descripción:** borra la simulación. Es irreversible (D-36).
-- **Errores:** `SimulacionNoEncontrada` si no existe.
-
-#### Almacenamiento.guardar
-- **Firma:** `guardar(simulacion_id: int, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion`
-- **Descripción:** reemplaza el estado guardado. Si el guardado se interrumpe, la versión anterior sigue válida (RF-50).
-- **Retorno:** el resumen actualizado.
-- **Errores:** `SimulacionNoEncontrada` si no existe.
-
-#### Almacenamiento.listar
-- **Firma:** `listar() -> list[ResumenSimulacion]`
-- **Descripción:** devuelve las simulaciones guardadas, sin su estado, en el orden en que se crearon.
-
-#### Almacenamiento.renombrar
-- **Firma:** `renombrar(simulacion_id: int, nombre: str) -> ResumenSimulacion`
-- **Descripción:** cambia el nombre, con las mismas reglas que `crear`.
-- **Errores:** `SimulacionNoEncontrada` si no existe; `NombreInvalido` si el nombre no vale o ya existe.
-
-### AgregarCriaturas
-- **Firma:** `AgregarCriaturas(especie_id: int, cantidad: int)`
-- **Descripción:** comando para añadir criaturas a una especie existente.
-- **Parámetros:** `especie_id` identifica la especie; `cantidad` es cuántas se añaden (mayor que 0).
-- **Errores:** `ComandoInvalido` si la especie no existe o la cantidad no es válida.
-
-### CancelarEvento
-- **Firma:** `CancelarEvento(tipo: TipoEvento)`
-- **Descripción:** comando para terminar antes de tiempo un evento natural activo.
-- **Parámetros:** `tipo` es el evento a cancelar.
-- **Errores:** `ComandoInvalido` si ese evento no está activo.
-
-### ComandoInvalido
-- **Firma:** `ComandoInvalido(ErrorSimulador)`
-- **Descripción:** el comando es de un tipo conocido, pero no se puede aplicar con el estado o los valores actuales (por ejemplo nutrientes fuera de rango o un evento ya activo).
-
-### ComandoNoSoportado
-- **Firma:** `ComandoNoSoportado(ErrorSimulador)`
-- **Descripción:** el motor no implementa ese tipo de comando. `MotorFalso` lo lanza con los comandos de especies y criaturas.
-
-### CrearEspecie
-- **Firma:** `CrearEspecie(nombre: str, cantidad: int, genes: tuple[float, float, float, float] | None = None)`
-- **Descripción:** comando para crear una especie nueva con una población inicial.
-- **Parámetros:** `nombre` de la especie; `cantidad` de criaturas iniciales; `genes` opcional con los cuatro genes iniciales (si es `None`, el motor elige).
-- **Errores:** `ComandoInvalido` si los valores no son válidos o se supera el cupo.
-
-### CupoAlcanzado
-- **Firma:** `CupoAlcanzado(tick: int, cupo: int)`
-- **Descripción:** aviso de que el total de criaturas llegó al cupo máximo.
-- **Parámetros:** `tick` en que ocurrió; `cupo` es el máximo vigente.
-
-### EliminarCriaturas
-- **Firma:** `EliminarCriaturas(especie_id: int, cantidad: int)`
-- **Descripción:** comando para quitar criaturas de una especie.
-- **Parámetros:** `especie_id` identifica la especie; `cantidad` es cuántas se quitan.
-- **Errores:** `ComandoInvalido` si la especie no existe o la cantidad no es válida.
-
-### EliminarEspecie
-- **Firma:** `EliminarEspecie(especie_id: int)`
-- **Descripción:** comando para borrar una especie y todas sus criaturas.
-- **Parámetros:** `especie_id` identifica la especie.
-- **Errores:** `ComandoInvalido` si la especie no existe.
-
-### ErrorSimulador
-- **Firma:** `ErrorSimulador(Exception)`
-- **Descripción:** clase base de todos los errores del simulador. Permite capturarlos juntos.
-
-### EspecieExtinguida
-- **Firma:** `EspecieExtinguida(especie_id: int, nombre: str, tick: int)`
-- **Descripción:** aviso de que una especie se quedó sin criaturas.
-- **Parámetros:** `especie_id` y `nombre` de la especie; `tick` en que ocurrió.
-
-### Estacion
-- **Firma:** `Estacion(Enum)`
-- **Descripción:** estación del año. Valores: `primavera`, `verano`, `otono`, `invierno`.
-
-### EstadoCasilla
-- **Firma:** `EstadoCasilla(IntEnum)`
-- **Descripción:** código de cada casilla en `Instantanea.terreno`. Valores: `tierra`=0, `agua`=1, `pasto`=2, `arbol`=3, `llamas`=4, `quemada`=5. (Propuesta: Ecosistema debe confirmarla.)
-
-### EventoNaturalIniciado
-- **Firma:** `EventoNaturalIniciado(tipo: TipoEvento, origen: OrigenEvento, tick: int)`
-- **Descripción:** aviso de que empezó un evento natural.
-- **Parámetros:** `tipo` del evento; `origen` natural o manual; `tick` en que empezó.
-
-### EventoNaturalTerminado
-- **Firma:** `EventoNaturalTerminado(tipo: TipoEvento, tick: int, cancelado: bool = False)`
-- **Descripción:** aviso de que terminó un evento natural.
-- **Parámetros:** `tipo` del evento; `tick` en que terminó; `cancelado` es `True` si se terminó con `CancelarEvento`.
-
-### ExtinguirEspecie
-- **Firma:** `ExtinguirEspecie(especie_id: int)`
-- **Descripción:** comando para dejar una especie sin criaturas, conservándola en la lista (queda marcada como extinguida).
-- **Parámetros:** `especie_id` identifica la especie.
-- **Errores:** `ComandoInvalido` si la especie no existe.
-
-### FijarNutrientes
-- **Firma:** `FijarNutrientes(nivel: int)`
-- **Descripción:** comando para fijar el nivel de nutrientes del terreno.
-- **Parámetros:** `nivel` entre 0 y 100.
-- **Errores:** `ComandoInvalido` si `nivel` está fuera de rango.
-
-### InfoEspecie
-- **Firma:** `InfoEspecie(especie_id: int, nombre: str, color: str, poblacion: int, extinguida: bool)`
-- **Descripción:** resumen de una especie dentro de la instantánea.
-- **Parámetros:** `color` es el color con que la app dibuja la especie; `poblacion` es el número actual de criaturas; `extinguida` indica si ya no tiene criaturas.
-
-### InfoEvento
-- **Firma:** `InfoEvento(tipo: TipoEvento, ticks_restantes: int | None = None, casillas_en_llamas: int | None = None)`
-- **Descripción:** evento natural activo dentro de la instantánea.
-- **Parámetros:** `ticks_restantes` hasta que termine (`None` si no aplica); `casillas_en_llamas` solo para incendios (`None` si no aplica).
-
-### Instantanea
-- **Firma:** `Instantanea(tick, estacion, temperatura, nutrientes, terreno, criaturas, especies, eventos, cupo)`
-- **Descripción:** foto inmutable del mundo en un tick. Es lo único que la app lee para dibujar. Los arreglos `terreno` y `criaturas` son de solo lectura.
-- **Atributos:**
-  - `tick: int` número de tick.
-  - `estacion: Estacion` estación actual.
-  - `temperatura: float` temperatura actual.
-  - `nutrientes: int` nivel de nutrientes (0–100).
-  - `terreno: numpy.ndarray` matriz de códigos `EstadoCasilla`.
-  - `criaturas: numpy.ndarray` datos de las criaturas vivas.
-  - `especies: tuple[InfoEspecie, ...]` resumen por especie.
-  - `eventos: tuple[InfoEvento, ...]` eventos activos.
-  - `cupo: int` máximo de criaturas permitido.
-- **Propiedad:** `total_criaturas: int` número total de criaturas vivas.
-- **Errores:** intentar escribir en `terreno` o `criaturas` lanza `ValueError` (numpy).
-
-### Motor
-- **Firma:** `Motor(ABC)`
-- **Descripción:** interfaz que debe cumplir el motor de simulación. La app solo conoce esta clase, no la implementación.
-- **Métodos:**
-
-#### Motor.aEstado
-- **Firma:** `aEstado() -> bytes`
-- **Descripción:** serializa el estado completo para guardarlo.
-- **Retorno:** bytes opacos; con `desdeEstado` deben reconstruir el mismo mundo.
-
-#### Motor.aplicar
-- **Firma:** `aplicar(comando: Comando) -> None`
-- **Descripción:** entrega un comando al motor. Surte efecto al inicio del siguiente `avanzar`.
-- **Parámetros:** `comando` es cualquiera de los comandos de esta sección.
-- **Errores:** `ComandoInvalido` si no se puede aplicar; `ComandoNoSoportado` si el motor no lo implementa.
-
-#### Motor.avanzar
-- **Firma:** `avanzar() -> list[Aviso]`
-- **Descripción:** avanza la simulación un tick.
-- **Retorno:** avisos generados en ese tick (`CupoAlcanzado`, `EspecieExtinguida`, `EventoNaturalIniciado`, `EventoNaturalTerminado`), posiblemente vacía.
-
-#### Motor.desdeEstado
-- **Firma:** `desdeEstado(estado: bytes) -> Motor` (método de clase)
-- **Descripción:** reconstruye un motor a partir de bytes producidos por `aEstado`.
-- **Errores:** `ErrorSimulador` si los bytes no son válidos.
-
-#### Motor.huellaEstado
-- **Firma:** `huellaEstado() -> str`
-- **Descripción:** huella (hash) del estado. Dos motores con la misma semilla y los mismos comandos deben dar la misma huella; se usa para probar determinismo.
-
-#### Motor.obtenerInstantanea
-- **Firma:** `obtenerInstantanea() -> Instantanea`
-- **Descripción:** devuelve la foto actual del mundo sin modificarlo.
-
-### MotorFalso
-- **Firma:** `MotorFalso(tamano: int = 100, retardo: float = 0.0)`
-- **Descripción:** motor de pruebas de App (`simulador.contratos.motor_falso`). Cumple `Motor` sin ecosistema ni criaturas, para probar la interfaz sin esperar al motor real. Soporta `FijarNutrientes`, `ProvocarEvento` y `CancelarEvento`; el resto de comandos lanzan `ComandoNoSoportado`.
-- **Parámetros:** `tamano` lado del terreno; `retardo` segundos que tarda cada `avanzar` (para simular un motor lento).
-
-### NombreInvalido
-- **Firma:** `NombreInvalido(ErrorSimulador)`
-- **Descripción:** el nombre de una simulación no cumple las reglas (de 1 al largo máximo, sin espacios al inicio ni al final) o ya lo usa otra simulación guardada. Lo lanzan `validarNombre`, `Almacenamiento.crear` y `Almacenamiento.renombrar`.
-
-### OrigenEvento
-- **Firma:** `OrigenEvento(Enum)`
-- **Descripción:** quién inició un evento. Valores: `natural`, `manual`.
-
-### ProvocarEvento
-- **Firma:** `ProvocarEvento(tipo: TipoEvento, foco_x: int | None = None, foco_y: int | None = None, radio: int = 0)`
-- **Descripción:** comando para iniciar un evento natural a petición del usuario.
-- **Parámetros:** `tipo` del evento; `foco_x`, `foco_y` casilla de origen (solo eventos localizados, como el incendio); `radio` alcance inicial.
-- **Errores:** `ComandoInvalido` si ese evento ya está activo.
-
-### ResumenSimulacion
-- **Firma:** `ResumenSimulacion(simulacion_id: int, nombre: str, tick: int, fecha_guardado: datetime, velocidad: int)`
-- **Descripción:** datos de una simulación guardada, sin su estado. Es inmutable.
-- **Atributos:**
-  - `simulacion_id: int` identificador; no se reutiliza al borrar.
-  - `nombre: str` nombre único en la biblioteca.
-  - `tick: int` tick del último guardado.
-  - `fecha_guardado: datetime` fecha y hora del último guardado.
-  - `velocidad: int` velocidad de simulación (ticks por segundo) del último guardado.
-
-### SimulacionNoEncontrada
-- **Firma:** `SimulacionNoEncontrada(ErrorSimulador)`
-- **Descripción:** no existe una simulación guardada con ese identificador. Lo lanzan `Almacenamiento.cargar`, `Almacenamiento.guardar`, `Almacenamiento.eliminar` y `Almacenamiento.renombrar`.
-
-### TipoEvento
-- **Firma:** `TipoEvento(Enum)`
-- **Descripción:** tipos de evento natural. Valores: `sequia`, `lluvia`, `incendio`.
-### validarNombre
-- **Firma:** `validarNombre(nombre: str) -> str` (función de `simulador.contratos.almacenamiento`, no pertenece a ninguna clase)
-- **Descripción:** comprueba las reglas del nombre de una simulación: de 1 al largo máximo y sin espacios al inicio ni al final. El largo máximo es 60 por ahora (constante provisional `LARGO_MAXIMO_NOMBRE`; pasará a la configuración). Que el nombre no se repita, sin distinguir mayúsculas, no lo comprueba esta función: lo comprueba cada implementación de `Almacenamiento`.
-- **Parámetros:** `nombre` es el texto que se quiere usar como nombre.
-- **Retorno:** el mismo nombre, sin cambios.
-- **Errores:** `NombreInvalido` si el nombre no cumple las reglas.
-
----
-
-# Grupo App -> Grupo Vida
-
-Vida usa los mismos contratos descritos en **Grupo App -> Grupo Ecosistema**; no hay contratos adicionales. En particular, `CrearEspecie`, `AgregarCriaturas`, `EliminarCriaturas`, `ExtinguirEspecie`, `EliminarEspecie`, `InfoEspecie` y `EspecieExtinguida` son los que tocan a Vida. El estado que Vida entrega para guardar incluye a sus especies, criaturas e historial: ver **Formato de guardado** en la sección **Grupo App -> Grupo Ecosistema**.
+## Vida ⇄ Ecosistema
+
+### `MapaPuerto` (`vida/puertos.py`)
+
+Lo único que Vida necesita del mapa. Cualquier objeto que lo cumpla sirve (el adaptador real es `integracion/mapa_vida.py::MapaVida`; para pruebas, `vida/adaptadores/mapa_falso.py`). Coordenadas `(x, y)`: x es la columna, y la fila.
+
+| Miembro | Descripción |
+|---|---|
+| `ancho`, `alto` | Dimensiones. |
+| `en_limites(x, y)` | ¿Está dentro del mapa? |
+| `es_transitable(x, y)` | ¿Puede pisarla una criatura? (el agua no) |
+| `biomasa_en(x, y)` | Comida disponible en unidades u (0 si no hay). |
+| `consumir_biomasa(x, y)` | Quita toda la comida y devuelve cuánta había. |
+| `hay_fuego(x, y)` | ¿Está en llamas? |
+| `buscar_en_radio(x, y, radio, tipo)` | Casillas a distancia de Chebyshev ≤ `radio` con comida (`TIPO_COMIDA`) o fuego (`TIPO_FUEGO`). |
+| `plantas_en_radio(x, y, radio)` | **Opcional.** Devuelve arreglos `(xs, ys, biomasa)` de las casillas con comida, en orden fila a fila; Vida lo usa si existe (vía rápida con NumPy) y si no, recorre con `buscar_en_radio`. |
+
+### `Poblacion` (`vida/poblacion.py`)
+
+| Método | Descripción |
+|---|---|
+| `actualizar(mapa, temperatura)` | Un tick de Vida. |
+| `crear_especie(...)`, `agregar_individuos(...)`, `eliminar_criaturas(...)`, `extinguir_especie(...)`, `eliminar_especie(...)` | Operaciones sobre especies y criaturas. |
+| `eliminar_en(x, y)` | Mata a las criaturas de una casilla (la usa el fuego). |
+| `snapshot()` | Resumen por especie: población y promedios de S, V, R y energía. |
+| `a_dict()` / `desde_dict()` | Guardado y carga. |
+
+### `Historial` (`vida/historial.py`)
+
+Series por especie (población y promedios) para las gráficas; máximo 2000 puntos por especie, después se reduce.

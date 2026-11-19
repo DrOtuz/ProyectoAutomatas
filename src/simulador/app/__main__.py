@@ -1,8 +1,8 @@
-"""Punto de entrada: python -m simulador.app"""
+"""Compatibilidad: `python -m simulador.app` hace lo mismo que `python -m simulador`."""
 
 import sys
 
-from simulador.app.aplicacion import ejecutar
+from simulador.__main__ import main
 
 if __name__ == "__main__":
-    sys.exit(ejecutar())
+    sys.exit(main())

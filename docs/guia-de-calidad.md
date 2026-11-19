@@ -74,9 +74,9 @@ Definidas en `docs/contratos.md`:
 * **Protección de ramas:** `main` y `develop` están protegidas; toda integración se realiza mediante Pull Request aprobado con **«Create a merge commit»**.
 * **Commits atómicos:** Los cambios deben agruparse en commits pequeños con mensajes en formato convencional:
   ```text
-  tipo(subgrupo): descripción breve en infinitivo (A-nn)
+  tipo(subgrupo): descripción breve en infinitivo
   ```
-  *(ej. `feat(app): agregar script de trazabilidad (A-15)` o `fix(app): corregir limite en ejecutor (A-9b)`).*
+  *(ej. `feat(app): agregar boton de guardado` o `fix(vida): corregir limite de energia`).*
 * **Archivos específicos:** **Nunca usar `git add .`**. Agregar siempre los archivos modificados por nombre explícito.
 * **Sin atribuciones externas:** No incluir firmas automáticas ni líneas de atribución (`Co-Authored-By`, `Claude-Session`, etc.) en mensajes de commit ni en la descripción de Pull Requests.
 * **Comprobación previa al push:**
