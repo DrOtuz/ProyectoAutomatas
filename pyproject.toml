@@ -4,9 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simulador"
-version = "0.1.0"
+version = "0.2.0"
 description = "Simulador de evolución de criaturas en un ecosistema."
+readme = "README.md"
 requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "PySide6>=6.6",
+    "pyqtgraph>=0.13",
+]
+
+[project.optional-dependencies]
+# Herramientas para desarrollar: pruebas, estilo y reglas de importación.
+dev = [
+    "pytest>=8.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.5",
+    "import-linter>=2.0",
+]
+
+[project.gui-scripts]
+simulador = "simulador.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -24,7 +42,6 @@ addopts = "--strict-markers"
 [tool.ruff]
 line-length = 100
 src = ["src"]
-
 
 [tool.importlinter]
 root_package = "simulador"
