@@ -2,6 +2,9 @@
 
 Los valores los define Ecosistema a partir de la tabla de parametros de la especificacion.
 Cada parametro se declara con `campo(valor, minimo=..., maximo=...)`, igual que en app.py.
+
+Aqui solo van parametros. Las clases (Casilla, Mapa, GestorEventos, AutomataFuego) viven en
+src/simulador/ecosistema/ y leen estas secciones (RNF-06).
 """
 
 from __future__ import annotations
@@ -9,50 +12,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from simulador.configuracion.base import validarSeccion
-from simulador.contratos.instantanea import EstadoCasilla
 
-tick_actual = 0
-ticks_para_regenerar=150
-
-def getTickActual():
-    return tick_actual
 
 @dataclass(frozen=True)
 class ConfiguracionEcosistema:
     def __post_init__(self):
         validarSeccion(self)
-@dataclass(frozen=True)
-class Casilla:
 
-    def __post_init__(self, tipo_casilla:EstadoCasilla, coordenada:tuple):
-        self.tipo:EstadoCasilla = tipo_casilla
-        self.humedad = 0
-        self.coordenada = coordenada
-        self.alimento = 0
-        self.tick_quemada = 0
-        
-    def getTipo(self) -> EstadoCasilla:
-        """Obtiene el tipo de la casilla"""
-        return self.tipo
-    def getHumedad(self)->float:
-        """Obtiene la humedad presente en la casilla"""
-        return self.humedad #cambiar dependiente al tipo de dato de humedad
 
-    def quemar(self)->None: 
-        """Cambia el estado de una casilla a quemado"""
-        self.tick_quemada = tick_actual
-        self.tipo = EstadoCasilla['quemada']
-    def regenerar(self):
-        """En caso de estar quemada, cambia el estado de una casilla a tierra"""
-        if (self.getTipo()==EstadoCasilla['quemada'] and getTickActual() - self.tick_quemada > ticks_para_regenerar):self.tipo = EstadoCasilla['tierra']
-    def evolucionar(self):
-        """Evoluciona de  tierra a pasto o de pasto a arbol, no tiene restricciones por el momento"""
-        if (self.getTipo()==EstadoCasilla['tierra']):self.tipo = EstadoCasilla['pasto'] #posiblemente meter restricciones luego
-        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = EstadoCasilla['arbol']#posiblemente meter restricciones luego
-    def involucionar(self):
-        """Involuciona de  pasto a tierra  o de arbol a pasto , no tiene restricciones por el momento"""
-        if (self.getTipo()==EstadoCasilla['pasto']):self.tipo = EstadoCasilla['tierra']#posiblemente meter restricciones luego
-        if (self.getTipo()==EstadoCasilla['arbol']):self.tipo = EstadoCasilla['pasto']#posiblemente meter restricciones luego
 EVENTOS = {
     "lambda": {
         "primavera": {"sequia": 0.15, "lluvia": 0.50, "foco": 0.10},
@@ -65,126 +32,61 @@ EVENTOS = {
     "factor_crecimiento": {"sequia": 0.3, "lluvia": 1.5},
     "delta_temperatura_sequia": 3.0,
     "multiplicador_foco_sequia": 3.0,
+    "factor_lluvia_fuego": 0.3,
+    "probabilidad_apagar_llama": 0.30,
 }
 
-"""Eventos naturales globales: sequia y lluvia (paso 2 del tick).
 
-Los parametros salen de la seccion EVENTOS de configuracion/ecosistema.py (RNF-06).
-Todo el azar sale del generador unico que se pasa al constructor (RNF-05).
-"""
-from dataclasses import dataclass
-
-TIPOS_CLIMA = ("sequia", "lluvia")
-
-
-class ErrorSimulador(Exception):
-    """Provisional: reemplazar por el error del contrato cuando exista."""
-
-
-@dataclass
-class EventoNatural:
-    tipo: str
-    origen: str
-    tick_inicio: int
-    duracion: int
-    ticks_restantes: int
+CALENDARIO = {
+    "ticks_por_estacion": 500,
+    "ticks_por_dia": 24,
+    "amplitud_dia": 3.0,
+    "estaciones": ("primavera", "verano", "otono", "invierno"),
+    "por_estacion": {
+        "primavera": {"temperatura_base": 20.0, "factor_humedad": 1.0, "factor_crecimiento": 1.2, "factor_inflamabilidad": 0.8},
+        "verano": {"temperatura_base": 30.0, "factor_humedad": 0.7, "factor_crecimiento": 0.8, "factor_inflamabilidad": 1.5},
+        "otono": {"temperatura_base": 18.0, "factor_humedad": 1.0, "factor_crecimiento": 1.0, "factor_inflamabilidad": 1.0},
+        "invierno": {"temperatura_base": 10.0, "factor_humedad": 0.9, "factor_crecimiento": 0.3, "factor_inflamabilidad": 0.5},
+    },
+}
 
 
-class GestorEventos:
-    esta_en_sequia: bool
-    esta_lloviendo: bool
-    eventos_activos: list[EventoNatural]
+# Valores marcados "provisional" no salen de la especificacion que tengo a la vista:
+# confirmarlos contra la tabla A.6 y calibrarlos en las semanas 7 a 9.
+FUEGO = {
+    # ticks que una casilla permanece en llamas antes de pasar a quemada (RF-34)
+    "duracion_llamas": {"pasto": 3, "arbol": 8},
+    # ticks que una casilla quemada tarda en volver a tierra (RF-26)
+    "ticks_para_regenerar": 150,
+    # probabilidad base por vecina en llamas y por tick, segun la vegetacion de la casilla
+    # que podria prenderse (RF-33). Provisional.
+    "probabilidad_propagacion": {"pasto": 0.30, "arbol": 0.20},
+    # cuanto reduce la humedad la probabilidad: factor = max(0, 1 - peso * humedad). Provisional.
+    "peso_humedad": 1.0,
+    # factor de temperatura = max(0, 1 + sensibilidad * (T - referencia)). Provisional.
+    "temperatura_referencia": 20.0,
+    "sensibilidad_temperatura": 0.02,
+    # vecinas que cuentan para la propagacion: 8 (con diagonales) o 4. Provisional.
+    "vecindad": 8,
+    # radio maximo (distancia de Chebyshev) del incendio provocado a mano (RF-32)
+    "radio_manual_maximo": 3,
+}
 
-    def __init__(self, rng, config=None):
-        if config is None:
-            from simulador.configuracion.ecosistema import EVENTOS
 
-            config = EVENTOS
-        self.esta_en_sequia = False
-        self.esta_lloviendo = False
-        self.eventos_activos = []
-        self._rng = rng
-        self._config = config
-        self._pendientes_provocar: list[str] = []
-        self._pendientes_cancelar: list[str] = []
-
-    def cancelarEvento(self, tipo: str) -> None:
-        if not self._hayActivo(tipo):
-            raise ErrorSimulador(f"No hay evento activo de tipo {tipo}")
-        self._pendientes_cancelar.append(tipo)
-
-    def factorCrecimiento(self) -> float:
-        return self._config["factor_crecimiento"].get(self._tipoClima(), 1.0)
-
-    def modificadorHumedad(self) -> float:
-        return self._config["modificador_humedad"].get(self._tipoClima(), 0.0)
-
-    def modificadorTemperatura(self) -> float:
-        if self._hayActivo("sequia"):
-            return self._config["delta_temperatura_sequia"]
-        return 0.0
-
-    def paso(self, tick: int, estacion: str, ticks_por_estacion: int) -> bool:
-        """Paso 2 del tick. Devuelve True si hay foco natural de incendio este tick."""
-        # Siempre 5 sorteos, aunque no hagan falta (RNF-05):
-        # 0 sequia, 1 lluvia, 2 foco, 3 duracion sequia, 4 duracion lluvia
-        sorteos = self._rng.random(5)
-        L = ticks_por_estacion
-
-        for evento in self.eventos_activos:
-            evento.ticks_restantes -= 1
-        self.eventos_activos = [
-            e
-            for e in self.eventos_activos
-            if e.ticks_restantes > 0 and e.tipo not in self._pendientes_cancelar
-        ]
-        self._pendientes_cancelar.clear()
-
-        for tipo in self._pendientes_provocar:
-            self._iniciar(tipo, "manual", tick, sorteos, L)
-        self._pendientes_provocar.clear()
-
-        lam = self._config["lambda"][estacion]
-        sequia_nueva = False
-        if sorteos[0] < lam["sequia"] / L:
-            sequia_nueva = self._iniciar("sequia", "natural", tick, sorteos, L)
-        if not sequia_nueva and sorteos[1] < lam["lluvia"] / L:
-            self._iniciar("lluvia", "natural", tick, sorteos, L)
-
-        self._actualizarBanderas()
-
-        p_foco = lam["foco"] / L
-        if self.esta_en_sequia:
-            p_foco *= self._config["multiplicador_foco_sequia"]
-        return bool(sorteos[2] < p_foco)
-
-    def provocarEvento(self, tipo: str) -> None:
-        if tipo not in TIPOS_CLIMA:
-            raise ErrorSimulador(f"Tipo de evento invalido: {tipo}")
-        if self._hayActivo(tipo):
-            raise ErrorSimulador(f"Ya hay un evento activo de tipo {tipo}")
-        self._pendientes_provocar.append(tipo)
-
-    def _actualizarBanderas(self) -> None:
-        self.esta_en_sequia = self._hayActivo("sequia")
-        self.esta_lloviendo = self._hayActivo("lluvia")
-
-    def _hayActivo(self, tipo: str) -> bool:
-        return any(e.tipo == tipo for e in self.eventos_activos)
-
-    def _iniciar(self, tipo: str, origen: str, tick: int, sorteos, L: int) -> bool:
-        if self._hayActivo(tipo):
-            return False
-        opuesto = "lluvia" if tipo == "sequia" else "sequia"
-        self.eventos_activos = [e for e in self.eventos_activos if e.tipo != opuesto]
-        minimo, maximo = self._config["duracion"][tipo]
-        u = sorteos[3] if tipo == "sequia" else sorteos[4]
-        duracion = max(1, round((minimo + (maximo - minimo) * u) * L))
-        self.eventos_activos.append(EventoNatural(tipo, origen, tick, duracion, duracion))
-        return True
-
-    def _tipoClima(self):
-        for evento in self.eventos_activos:
-            if evento.tipo in TIPOS_CLIMA:
-                return evento.tipo
-        return None
+# Crecimiento de la vegetacion, alimento por casilla y humedad. NO viene del plan de A:
+# lo agrego el trabajo de integracion para poder cerrar el bucle con Vida. Los valores de
+# alimento son los que Vida le propuso a A (pasto 30 u que regenera 1 u/tick, arbol 60 u
+# que regenera 2 u/tick). El resto es provisional y A debe confirmarlo o reemplazarlo.
+VEGETACION = {
+    "alimento_maximo": {"pasto": 30.0, "arbol": 60.0},
+    "regeneracion": {"pasto": 1.0, "arbol": 2.0},
+    # probabilidad por tick de pasar de tierra a pasto y de pasto a arbol (con nutrientes 50
+    # y crecimiento 1.0)
+    "probabilidad_crecer": {"tierra": 0.002, "pasto": 0.0005},
+    # la humedad base de una casilla baja con la distancia al agua hasta este radio
+    "radio_humedad": 5,
+    # que tan rapido sigue la humedad a su valor objetivo (0 a 1 por tick)
+    "inercia_humedad": 0.1,
+    # nutrientes iniciales del suelo (0 a 100)
+    "nutrientes_iniciales": 50,
+}

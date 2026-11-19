@@ -45,13 +45,15 @@ class CancelarEvento:
 class CrearEspecie:
     """Crea una especie con su cantidad inicial de criaturas.
 
-    Si genes es None se usan los genes base. En modo avanzado se indican en el
-    orden V, F, W, T de la especificacion.
+    dieta: "herbivoro", "carnivoro" u "omnivoro".
+    genes: None usa la plantilla de la dieta. En modo avanzado son (tamano S, velocidad V,
+    vision R); los rangos validos los define Vida (S y V de 0.5 a 3.0, R de 1 a 10).
     """
 
     nombre: str
     cantidad: int
-    genes: tuple[float, float, float, float] | None = None
+    dieta: str = "herbivoro"
+    genes: tuple[float, float, float] | None = None
 
 
 @dataclass(frozen=True)

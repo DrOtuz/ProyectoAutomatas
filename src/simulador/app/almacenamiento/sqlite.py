@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import functools
 import sqlite3
+import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
@@ -10,8 +12,16 @@ from pathlib import Path
 from typing import Any
 
 from simulador.configuracion.app import ConfiguracionApp
-from simulador.contratos.almacenamiento import Almacenamiento, ResumenSimulacion, validarNombre
-from simulador.contratos.errores import ErrorSimulador, NombreInvalido, SimulacionNoEncontrada
+from simulador.contratos.almacenamiento import (
+    Almacenamiento,
+    ResumenSimulacion,
+    validarNombre,
+)
+from simulador.contratos.errores import (
+    ErrorSimulador,
+    NombreInvalido,
+    SimulacionNoEncontrada,
+)
 
 VERSION_ESQUEMA = 1
 
@@ -32,6 +42,18 @@ _COLUMNAS_RESUMEN = "id, nombre, tick, fecha_guardado, velocidad"
 _MIGRACIONES: dict[int, Callable[[sqlite3.Connection], None]] = {}
 
 
+def _conCerrojo(metodo):
+    """El Ejecutor guarda desde su hilo y la ventana lista y carga desde el hilo principal:
+    la conexion se comparte, asi que cada operacion publica toma el cerrojo."""
+
+    @functools.wraps(metodo)
+    def envuelto(self, *args, **kwargs):
+        with self._cerrojo:
+            return metodo(self, *args, **kwargs)
+
+    return envuelto
+
+
 class ErrorEsquema(ErrorSimulador):
     """El archivo de guardado es de una version que este programa no sabe abrir."""
 
@@ -44,17 +66,20 @@ class AlmacenamientoSqlite(Almacenamiento):
     ) -> None:
         self._configuracion = configuracion if configuracion is not None else ConfiguracionApp()
         Path(ruta).parent.mkdir(parents=True, exist_ok=True)
-        self._conexion = sqlite3.connect(str(ruta), isolation_level=None)
+        self._cerrojo = threading.RLock()
+        self._conexion = sqlite3.connect(str(ruta), isolation_level=None, check_same_thread=False)
         try:
             self._prepararEsquema()
         except ErrorSimulador:
             self._conexion.close()
             raise
 
+    @_conCerrojo
     def cerrar(self) -> None:
         """Cierra el archivo. Hay que llamarlo antes de borrar o mover el archivo (Windows)."""
         self._conexion.close()
 
+    @_conCerrojo
     def crear(self, nombre: str, estado: bytes, tick: int, velocidad: int) -> ResumenSimulacion:
         validarNombre(nombre, self._configuracion.largo_maximo_nombre)
         ahora = datetime.now()
@@ -76,6 +101,7 @@ class AlmacenamientoSqlite(Almacenamiento):
             velocidad=velocidad,
         )
 
+    @_conCerrojo
     def guardar(
         self, simulacion_id: int, estado: bytes, tick: int, velocidad: int
     ) -> ResumenSimulacion:
@@ -90,6 +116,7 @@ class AlmacenamientoSqlite(Almacenamiento):
             self._puntoDeCorte()
         return self._obtenerResumen(simulacion_id)
 
+    @_conCerrojo
     def cargar(self, simulacion_id: int) -> bytes:
         fila = self._conexion.execute(
             "SELECT estado FROM simulaciones WHERE id = ?", (simulacion_id,)
@@ -98,12 +125,14 @@ class AlmacenamientoSqlite(Almacenamiento):
             raise SimulacionNoEncontrada(f"No existe la simulacion {simulacion_id}.")
         return bytes(fila[0])
 
+    @_conCerrojo
     def listar(self) -> list[ResumenSimulacion]:
         filas = self._conexion.execute(
             f"SELECT {_COLUMNAS_RESUMEN} FROM simulaciones ORDER BY id"
         ).fetchall()
         return [self._aResumen(fila) for fila in filas]
 
+    @_conCerrojo
     def renombrar(self, simulacion_id: int, nombre: str) -> ResumenSimulacion:
         self._obtenerResumen(simulacion_id)
         validarNombre(nombre, self._configuracion.largo_maximo_nombre)
@@ -117,6 +146,7 @@ class AlmacenamientoSqlite(Almacenamiento):
             raise NombreInvalido("Ya existe una simulacion con ese nombre.") from error
         return self._obtenerResumen(simulacion_id)
 
+    @_conCerrojo
     def eliminar(self, simulacion_id: int) -> None:
         with self._transaccion() as conexion:
             cursor = conexion.execute("DELETE FROM simulaciones WHERE id = ?", (simulacion_id,))

@@ -457,6 +457,27 @@ class Poblacion:
         self._revisar_extinciones()
         return muertas
 
+    def eliminar_criaturas(self, nombre: str, cantidad: int) -> int:
+        """Retira `cantidad` criaturas de la especie, elegidas al azar (causa
+        ELIMINACION). La especie sigue existiendo, y si se queda sin ninguna
+        pasa a extinta. Devuelve cuantas murieron."""
+        if cantidad < 0:
+            raise ValueError("cantidad no puede ser negativa")
+        especie = self.especies[nombre]
+        if especie.estado == EstadoEspecie.ELIMINADA:
+            return 0
+        elegidas = self.rng.sample(sorted(especie.ids), min(cantidad, especie.contar()))
+        for id_ in elegidas:
+            self._criaturas[id_].morir(CausaMuerte.ELIMINACION)
+        self._retirar_muertas()
+        self._revisar_extinciones()
+        return len(elegidas)
+
+    def extinguir_especie(self, nombre: str) -> int:
+        """Mata a todas las criaturas de la especie, que queda extinta (sigue en
+        la lista y se le pueden agregar individuos). Devuelve cuantas murieron."""
+        return self.eliminar_criaturas(nombre, self.especies[nombre].contar())
+
     # ================================================================================
     # revision interna
     # ================================================================================

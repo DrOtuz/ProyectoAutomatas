@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
@@ -17,13 +18,19 @@ from PySide6.QtWidgets import (
 )
 
 from simulador.app.interfaz.estilos import PALETA_ESPECIES
+from simulador.vida.config import ConfigVida
+from simulador.vida.tipos import Dieta
+
+_VIDA = ConfigVida()  # rangos y plantillas por dieta: los define Vida
+DIETAS = (("Herbívoro", Dieta.HERBIVORO), ("Carnívoro", Dieta.CARNIVORO), ("Omnívoro", Dieta.OMNIVORO))
 
 
 class CrearEspecieWidget(QWidget):
     """Permite configurar y lanzar una nueva especie con color de paleta asignado automaticamente."""
 
     volverLista = Signal()
-    crearEspecieSolicitado = Signal(str, int, object)  # nombre, cantidad, genes (tuple o None)
+    # nombre, cantidad, dieta ("herbivoro", "carnivoro" u "omnivoro"), genes (S, V, R) o None
+    crearEspecieSolicitado = Signal(str, int, str, object)
 
     def __init__(self, color_siguiente_idx: int = 0, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -84,7 +91,19 @@ class CrearEspecieWidget(QWidget):
         col_cant.addWidget(lbl_cant)
         col_cant.addWidget(self.spin_cantidad)
 
+        col_dieta = QVBoxLayout()
+        lbl_dieta = QLabel("Dieta")
+        lbl_dieta.setStyleSheet("font-weight: bold; font-size: 13px; color: #333333;")
+        self.combo_dieta = QComboBox()
+        for texto, dieta in DIETAS:
+            self.combo_dieta.addItem(texto, dieta.value)
+        self.combo_dieta.setStyleSheet("padding: 8px 12px; border: 1px solid #D0C9BE; border-radius: 6px;")
+        self.combo_dieta.currentIndexChanged.connect(self._alCambiarDieta)
+        col_dieta.addWidget(lbl_dieta)
+        col_dieta.addWidget(self.combo_dieta)
+
         layout_campos.addLayout(col_nombre, 2)
+        layout_campos.addLayout(col_dieta, 1)
         layout_campos.addLayout(col_cant, 1)
         col_form.addLayout(layout_campos)
 
@@ -94,7 +113,7 @@ class CrearEspecieWidget(QWidget):
         self.chk_modo_avanzado.toggled.connect(self._alAlternarModoAvanzado)
         col_form.addWidget(self.chk_modo_avanzado)
 
-        lbl_ayuda_genes = QLabel("Si no los tocas, se usan los valores por defecto.")
+        lbl_ayuda_genes = QLabel("Si no los activas, se usan los valores propios de la dieta.")
         lbl_ayuda_genes.setStyleSheet("font-size: 12px; color: #777777;")
         col_form.addWidget(lbl_ayuda_genes)
 
@@ -106,10 +125,10 @@ class CrearEspecieWidget(QWidget):
         l_genes = QVBoxLayout(self.panel_genes)
         l_genes.setSpacing(8)
 
-        self.spin_vel = self._crearSpinGen("Velocidad:", l_genes)
-        self.spin_fza = self._crearSpinGen("Fuerza:", l_genes)
-        self.spin_vis = self._crearSpinGen("Visión:", l_genes)
-        self.spin_tam = self._crearSpinGen("Tamaño:", l_genes)
+        self.spin_tam = self._crearSpinGen("Tamaño (S):", l_genes, _VIDA.RANGO_TAMANO, 0.1)
+        self.spin_vel = self._crearSpinGen("Velocidad (V):", l_genes, _VIDA.RANGO_VELOCIDAD, 0.1)
+        self.spin_vis = self._crearSpinGen("Visión (R):", l_genes, _VIDA.RANGO_VISION, 1.0)
+        self._alCambiarDieta()
         self.panel_genes.hide()
         col_form.addWidget(self.panel_genes)
 
@@ -193,20 +212,29 @@ class CrearEspecieWidget(QWidget):
         layout_cuerpo.addLayout(col_color, 2)
         layout_principal.addLayout(layout_cuerpo)
 
-    def _crearSpinGen(self, etiqueta: str, layout: QVBoxLayout) -> QDoubleSpinBox:
-        l = QHBoxLayout()
+    def _crearSpinGen(
+        self, etiqueta: str, layout: QVBoxLayout, rango: tuple[float, float], paso: float
+    ) -> QDoubleSpinBox:
+        fila = QHBoxLayout()
         lbl = QLabel(etiqueta)
         lbl.setStyleSheet("font-size: 12px; color: #333333;")
         spin = QDoubleSpinBox()
-        spin.setRange(1.0, 10.0)
-        spin.setValue(5.0)
-        spin.setSingleStep(0.5)
+        spin.setRange(*rango)
+        spin.setSingleStep(paso)
+        spin.setDecimals(1)
         spin.setStyleSheet("padding: 4px; font-size: 12px;")
-        l.addWidget(lbl)
-        l.addStretch()
-        l.addWidget(spin)
-        layout.addLayout(l)
+        fila.addWidget(lbl)
+        fila.addStretch()
+        fila.addWidget(spin)
+        layout.addLayout(fila)
         return spin
+
+    def _alCambiarDieta(self, _indice: int = 0) -> None:
+        """Pone en los campos de genes la plantilla de la dieta elegida."""
+        tamano, velocidad, vision = _VIDA.PLANTILLAS[Dieta(self.combo_dieta.currentData())]
+        self.spin_tam.setValue(tamano)
+        self.spin_vel.setValue(velocidad)
+        self.spin_vis.setValue(vision)
 
     def _alAlternarModoAvanzado(self, activo: bool) -> None:
         self.panel_genes.setVisible(activo)
@@ -221,11 +249,6 @@ class CrearEspecieWidget(QWidget):
         cantidad = self.spin_cantidad.value()
         genes = None
         if self.chk_modo_avanzado.isChecked():
-            genes = (
-                self.spin_vel.value(),
-                self.spin_fza.value(),
-                self.spin_vis.value(),
-                self.spin_tam.value(),
-            )
+            genes = (self.spin_tam.value(), self.spin_vel.value(), self.spin_vis.value())
 
-        self.crearEspecieSolicitado.emit(nombre, cantidad, genes)
+        self.crearEspecieSolicitado.emit(nombre, cantidad, self.combo_dieta.currentData(), genes)
