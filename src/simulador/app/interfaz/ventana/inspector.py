@@ -54,6 +54,7 @@ class InspectorWidget(QFrame):
         # Especie
         self.lbl_especie = QLabel("Especie: Desconocida")
         self.lbl_especie.setStyleSheet("font-size: 12px; font-weight: 500; color: #333333;")
+        self.lbl_especie.setWordWrap(True)
         layout.addWidget(self.lbl_especie)
 
         # Métricas vitales
@@ -67,33 +68,53 @@ class InspectorWidget(QFrame):
 
         for lbl in (self.lbl_edad, self.lbl_saciedad, self.lbl_hidratacion, self.lbl_estado):
             lbl.setStyleSheet("font-size: 12px; color: #555555;")
+            lbl.setWordWrap(True)
             self.contenedor_metricas.addWidget(lbl)
 
         layout.addLayout(self.contenedor_metricas)
 
-    def mostrarCasilla(self, x: int, y: int, tipo: str) -> None:
-        """Presenta los datos de una casilla seleccionada."""
-        self.lbl_titulo.setText(f"Casilla ({x}, {y})")
-        self.lbl_especie.setText(f"Tipo: {tipo}")
-        self.lbl_edad.setText("")
-        self.lbl_saciedad.setText("")
-        self.lbl_hidratacion.setText("")
-        self.lbl_estado.setText("")
+    def _mostrar(self, titulo: str, especie: str, lineas: list[str]) -> None:
+        """Pone el texto, oculta las filas vacias y ajusta el tamano a lo que hay.
+
+        El inspector flota sobre el mapa sin estar en ningun layout, asi que no
+        toma solo el tamano de su contenido: hay que pedirselo con adjustSize()."""
+        self.lbl_titulo.setText(titulo)
+        self.lbl_especie.setText(especie)
+        etiquetas = (self.lbl_edad, self.lbl_saciedad, self.lbl_hidratacion, self.lbl_estado)
+        for etiqueta, texto in zip(etiquetas, lineas + [""] * len(etiquetas), strict=False):
+            etiqueta.setText(texto)
+            etiqueta.setVisible(bool(texto))
+        # el layout recalcula su tamano de forma perezosa: se fuerza antes de medir,
+        # si no la tarjeta se queda con la altura anterior y recorta las filas nuevas
+        self.layout().invalidate()
+        self.layout().activate()
+        alto = self.layout().totalHeightForWidth(self.width())  # con texto que se parte en lineas
+        self.resize(self.width(), alto if alto > 0 else self.layout().sizeHint().height())
+        self.move(10, 10)
         self.show()
+        self.raise_()
+
+    def mostrarCasilla(self, x: int, y: int, tipo: str, detalles: list[str] | None = None) -> None:
+        """Presenta los datos de una casilla seleccionada."""
+        self._mostrar(f"Casilla ({x}, {y})", f"Tipo: {tipo}", detalles or [])
 
     def mostrarCriatura(
         self,
         especie_nombre: str,
-        edad: int,
-        saciedad: int = 100,
-        hidratacion: int = 100,
-        estado: str = "Buscando alimento",
+        edad: int | None = None,
+        saciedad: int | None = None,
+        hidratacion: int | None = None,
+        estado: str | None = None,
+        detalles: list[str] | None = None,
     ) -> None:
-        """Presenta la informacion vital de una criatura seleccionada."""
-        self.lbl_titulo.setText("Criatura")
-        self.lbl_especie.setText(f"Especie: {especie_nombre}")
-        self.lbl_edad.setText(f"Edad: {edad} ticks")
-        self.lbl_saciedad.setText(f"Saciedad: {saciedad} %")
-        self.lbl_hidratacion.setText(f"Hidratación: {hidratacion} %")
-        self.lbl_estado.setText(f"Estado: {estado}")
-        self.show()
+        """Presenta lo que se sabe de una criatura. Solo se muestran los datos que se dan."""
+        lineas = list(detalles or [])
+        if edad is not None:
+            lineas.append(f"Edad: {edad} ticks")
+        if saciedad is not None:
+            lineas.append(f"Saciedad: {saciedad} %")
+        if hidratacion is not None:
+            lineas.append(f"Hidratación: {hidratacion} %")
+        if estado is not None:
+            lineas.append(f"Estado: {estado}")
+        self._mostrar("Criatura", f"Especie: {especie_nombre}", lineas)

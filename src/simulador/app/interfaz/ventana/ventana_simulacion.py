@@ -23,8 +23,23 @@ from simulador.app.interfaz.ventana.panel_eventos import PanelEventos
 from simulador.app.interfaz.ventana.visor_mapa import VisorMapa
 from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento, validarNombre
-from simulador.contratos.comandos import CancelarEvento, FijarNutrientes, ProvocarEvento
+from simulador.contratos.comandos import (
+    CancelarEvento,
+    FijarNutrientes,
+    ProvocarEvento,
+    TipoEvento,
+)
 from simulador.contratos.errores import ErrorSimulador
+from simulador.contratos.instantanea import EstadoCasilla
+
+NOMBRES_TERRENO = {
+    EstadoCasilla.tierra: "Tierra",
+    EstadoCasilla.agua: "Agua",
+    EstadoCasilla.pasto: "Pasto",
+    EstadoCasilla.arbol: "Árbol",
+    EstadoCasilla.llamas: "En llamas",
+    EstadoCasilla.quemada: "Quemada",
+}
 
 
 class VentanaSimulacion(QMainWindow):
@@ -45,6 +60,7 @@ class VentanaSimulacion(QMainWindow):
     ) -> None:
         super().__init__(parent)
         self._ejecutor = ejecutor
+        self._eligiendo_foco = False
         self._nombre = nombre
         self._almacenamiento = almacenamiento
         self._simulacion_id = simulacion_id
@@ -209,6 +225,7 @@ class VentanaSimulacion(QMainWindow):
         self.panel_eventos.provocarEvento.connect(
             lambda tipo: self._ejecutor.enviar(ProvocarEvento(tipo))
         )
+        self.panel_eventos.incendioSolicitado.connect(self._alternarEleccionFoco)
         self.panel_eventos.cancelarEvento.connect(
             lambda tipo: self._ejecutor.enviar(CancelarEvento(tipo))
         )
@@ -256,28 +273,51 @@ class VentanaSimulacion(QMainWindow):
         self._ejecutor.enviar(FijarNutrientes(valor))
         self.lbl_nut.setText(f"Nutrientes: {valor}")
 
-    def _alSeleccionarCasilla(self, x: int, y: int) -> None:
-        instantanea = self._ejecutor.obtenerInstantanea()
-        criaturas = instantanea.criaturas
-        # Buscar criatura en esa coordenada
-        encontrada = None
-        for i in range(criaturas.shape[0]):
-            if int(criaturas[i, 0]) == x and int(criaturas[i, 1]) == y:
-                encontrada = criaturas[i]
-                break
+    def _alternarEleccionFoco(self) -> None:
+        """El boton de incendio entra (o sale) del modo en que el siguiente clic es el foco."""
+        self._fijarEleccionFoco(not self._eligiendo_foco)
 
-        if encontrada is not None:
-            especie_id = int(encontrada[2])
-            nombre_esp = "Especie"
-            for esp in instantanea.especies:
-                if esp.especie_id == especie_id:
-                    nombre_esp = esp.nombre
-                    break
-            self.inspector.mostrarCriatura(especie_nombre=nombre_esp, edad=instantanea.tick)
-        else:
-            # Mostrar datos de casilla
-            tipo_codigo = int(instantanea.terreno[y, x])
-            self.inspector.mostrarCasilla(x, y, tipo=f"Tipo {tipo_codigo}")
+    def _fijarEleccionFoco(self, activo: bool) -> None:
+        self._eligiendo_foco = activo
+        self.panel_eventos.marcarEligiendoFoco(activo)
+        self.visor.setCursor(Qt.CursorShape.CrossCursor if activo else Qt.CursorShape.ArrowCursor)
+
+    def keyPressEvent(self, evento) -> None:
+        if evento.key() == Qt.Key.Key_Escape and self._eligiendo_foco:
+            self._fijarEleccionFoco(False)
+            return
+        super().keyPressEvent(evento)
+
+    def _alSeleccionarCasilla(self, x: int, y: int) -> None:
+        if self._eligiendo_foco:
+            self._fijarEleccionFoco(False)
+            self._ejecutor.enviar(ProvocarEvento(TipoEvento.incendio, foco_x=x, foco_y=y))
+            return
+        instantanea = self._ejecutor.obtenerInstantanea()
+        if not (0 <= x < instantanea.terreno.shape[1] and 0 <= y < instantanea.terreno.shape[0]):
+            return
+        codigo = int(instantanea.terreno[y, x])
+        try:
+            terreno = NOMBRES_TERRENO[EstadoCasilla(codigo)]
+        except ValueError:
+            terreno = f"código {codigo}"
+
+        criaturas = instantanea.criaturas
+        aqui = [int(fila[2]) for fila in criaturas if int(fila[0]) == x and int(fila[1]) == y]
+        if not aqui:
+            self.inspector.mostrarCasilla(x, y, tipo=terreno)
+            return
+
+        nombres = {e.especie_id: e for e in instantanea.especies}
+        detalles = [f"Casilla: {terreno} ({x}, {y})"]
+        info = nombres.get(aqui[0])
+        if info is not None:
+            detalles.append(f"Población de la especie: {info.poblacion}")
+        if len(aqui) > 1:
+            detalles.append(f"Hay {len(aqui)} criaturas en la casilla")
+        self.inspector.mostrarCriatura(
+            especie_nombre=info.nombre if info else "Especie", detalles=detalles
+        )
 
     def _onGuardar(self) -> None:
         if hasattr(self._ejecutor, "solicitarGuardado"):

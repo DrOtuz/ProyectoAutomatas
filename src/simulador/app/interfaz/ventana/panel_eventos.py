@@ -1,6 +1,6 @@
 """Panel de control y visualizacion de eventos naturales (RF-18, RF-28, RF-51)."""
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -25,6 +25,7 @@ class PanelEventos(QWidget):
 
     provocarEvento = Signal(object)
     cancelarEvento = Signal(object)
+    incendioSolicitado = Signal()  # el usuario quiere elegir en el mapa donde empieza
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -72,21 +73,56 @@ class PanelEventos(QWidget):
                 "}"
                 "QPushButton:hover { background-color: #F5F3EF; }"
             )
-            btn.clicked.connect(lambda _, t=tipo: self.provocarEvento.emit(t))
+            if tipo == TipoEvento.incendio:
+                btn.clicked.connect(lambda _=False: (self.limpiarError(), self.incendioSolicitado.emit()))
+            else:
+                btn.clicked.connect(lambda _, t=tipo: (self.limpiarError(), self.provocarEvento.emit(t)))
             layout_botones.addWidget(btn)
 
         layout.addLayout(layout_botones)
+
+        self.lbl_foco = QLabel("Haz clic en el mapa donde quieres que empiece el incendio. Esc para cancelar.")
+        self.lbl_foco.setWordWrap(True)
+        self.lbl_foco.setStyleSheet("font-size: 12px; color: #B71C1C; font-weight: bold;")
+        self.lbl_foco.hide()
+        layout.addWidget(self.lbl_foco)
 
         self.lbl_error = QLabel()
         self.lbl_error.setWordWrap(True)
         self.lbl_error.setStyleSheet("font-size: 12px; color: #D32F2F; font-weight: bold;")
         self.lbl_error.hide()
         layout.addWidget(self.lbl_error)
+        self._temporizador_error = QTimer(self)
+        self._temporizador_error.setSingleShot(True)
+        self._temporizador_error.timeout.connect(self.limpiarError)
+
+    def marcarEligiendoFoco(self, activo: bool) -> None:
+        """Resalta el boton de incendio y muestra la instruccion mientras se espera el clic."""
+        self.lbl_foco.setVisible(activo)
+        self.btn_incendio.setText("🔥 Elige la casilla…" if activo else "🔥 Incendio")
+        self.btn_incendio.setStyleSheet(
+            "QPushButton { background-color: #FFCDD2; border: 1px solid #B71C1C; border-radius: 6px;"
+            "  padding: 6px 10px; font-size: 12px; font-weight: 600; color: #B71C1C; }"
+            if activo
+            else "QPushButton {"
+            "  background-color: white; border: 1px solid #D0C9BE; border-radius: 6px;"
+            "  padding: 6px 10px; font-size: 12px; font-weight: 500; color: #1E1E1E;"
+            "}"
+            "QPushButton:hover { background-color: #F5F3EF; }"
+        )
 
     def mostrarError(self, texto: str) -> None:
-        """Muestra el motivo por el que el motor rechazo una orden (se borra solo al limpiar)."""
+        """Muestra el motivo por el que el motor rechazo una orden. Se quita solo a los
+        6 segundos, o antes si el usuario pulsa otro boton de eventos."""
         self.lbl_error.setText(texto)
         self.lbl_error.setVisible(bool(texto))
+        if texto:
+            self._temporizador_error.start(6000)
+        else:
+            self._temporizador_error.stop()
+
+    def limpiarError(self) -> None:
+        self.mostrarError("")
 
     @staticmethod
     def _textoEvento(evento: InfoEvento) -> str:
@@ -148,7 +184,7 @@ class PanelEventos(QWidget):
                 "}"
                 "QPushButton:hover { text-decoration: underline; }"
             )
-            btn_cancelar.clicked.connect(lambda _, t=evento.tipo: self.cancelarEvento.emit(t))
+            btn_cancelar.clicked.connect(lambda _, t=evento.tipo: (self.limpiarError(), self.cancelarEvento.emit(t)))
 
             l_f.addWidget(lbl_evento)
             l_f.addStretch()

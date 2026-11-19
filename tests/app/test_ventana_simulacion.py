@@ -195,3 +195,55 @@ def test_actualizar_ejecuta_sin_bloquear_hilo(ventana):
     # Llama a actualizar directamente verificando que no lanza excepciones
     ventana.actualizar()
     assert ventana.visor is not None
+
+
+def test_incendio_espera_clic_en_el_mapa(ventana):
+    enviados = []
+    ventana._ejecutor.enviar = enviados.append  # type: ignore[method-assign]
+
+    ventana.panel_eventos.btn_incendio.click()
+    assert ventana._eligiendo_foco
+    assert not ventana.panel_eventos.lbl_foco.isHidden()
+    assert enviados == []  # todavia no se provoca nada
+
+    ventana._alSeleccionarCasilla(12, 34)
+    assert not ventana._eligiendo_foco
+    assert len(enviados) == 1
+    orden = enviados[0]
+    assert (orden.tipo, orden.foco_x, orden.foco_y) == (TipoEvento.incendio, 12, 34)
+
+
+def test_incendio_se_puede_cancelar_sin_provocarlo(ventana):
+    enviados = []
+    ventana._ejecutor.enviar = enviados.append  # type: ignore[method-assign]
+
+    ventana.panel_eventos.btn_incendio.click()
+    ventana.panel_eventos.btn_incendio.click()  # segundo clic en el boton: cancela
+    assert not ventana._eligiendo_foco
+
+    ventana.panel_eventos.btn_incendio.click()
+    ventana._fijarEleccionFoco(False)  # lo mismo que pulsar Esc
+    ventana._alSeleccionarCasilla(5, 5)  # ya es una seleccion normal
+    assert not any(getattr(o, "tipo", None) == TipoEvento.incendio for o in enviados)
+
+
+def test_inspector_ajusta_su_tamano_y_muestra_el_terreno(ventana):
+    ventana._alSeleccionarCasilla(5, 5)
+    inspector = ventana.inspector
+    assert inspector.height() > 60  # antes quedaba con la altura por defecto y no se veia el texto
+    assert inspector.lbl_especie.text().startswith("Tipo: ")
+    assert "código" not in inspector.lbl_especie.text()
+
+
+def test_error_de_evento_se_quita_solo_y_al_pulsar_otro_boton(ventana):
+    panel = ventana.panel_eventos
+    panel.mostrarError("Ya hay una sequía activa.")
+    assert not panel.lbl_error.isHidden()
+    assert panel._temporizador_error.isActive()
+
+    panel._temporizador_error.timeout.emit()  # pasan los 6 segundos
+    assert panel.lbl_error.isHidden()
+
+    panel.mostrarError("otro error")
+    panel.btn_lluvia.click()  # pulsar otro boton de eventos lo limpia
+    assert panel.lbl_error.isHidden()
