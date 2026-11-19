@@ -89,7 +89,13 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
     import sys
 
     from PySide6.QtCore import QTimer
-    from PySide6.QtWidgets import QApplication, QStackedWidget, QVBoxLayout, QWidget
+    from PySide6.QtWidgets import (
+        QApplication,
+        QLabel,
+        QStackedWidget,
+        QVBoxLayout,
+        QWidget,
+    )
 
     from simulador.app.almacenamiento import AlmacenamientoSqlite, obtenerRutaBiblioteca
     from simulador.app.ejecutor.ejecutor import Ejecutor
@@ -134,7 +140,16 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             self._detalle = DetalleEspecieWidget()
             for w in (self._lista, self._crear, self._detalle):
                 self._pila.addWidget(w)
-            QVBoxLayout(self).addWidget(self._pila)
+            diseno = QVBoxLayout(self)
+            diseno.addWidget(self._pila)
+            self.lbl_error = QLabel()
+            self.lbl_error.setWordWrap(True)
+            self.lbl_error.setStyleSheet("font-size: 13px; color: #D32F2F; font-weight: bold;")
+            self.lbl_error.hide()
+            diseno.addWidget(self.lbl_error)
+            self._temporizador_error = QTimer(self)
+            self._temporizador_error.setSingleShot(True)
+            self._temporizador_error.timeout.connect(self.lbl_error.hide)
 
             self._lista.volverSimulacion.connect(self.hide)
             self._lista.solicitarCrearEspecie.connect(lambda: self._pila.setCurrentWidget(self._crear))
@@ -151,6 +166,11 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             self._reloj.setInterval(250)
             self._reloj.timeout.connect(self.refrescar)
             self._reloj.start()
+
+        def mostrarError(self, texto: str) -> None:
+            self.lbl_error.setText(texto)
+            self.lbl_error.show()
+            self._temporizador_error.start(6000)
 
         def _crearEspecie(self, nombre: str, cantidad: int, dieta: str, genes) -> None:
             self._ejecutor.enviar(CrearEspecie(nombre, cantidad, dieta, genes))
@@ -216,6 +236,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
         ejecutor.alAvanzar(registro.registrar)
         ventana = VentanaSimulacion(ejecutor, nombre, almacenamiento, simulacion_id, configuracion)
         especies = VentanaEspecies(ejecutor, nombre, registro)
+        ventana.errorMotor.connect(especies.mostrarError)
         ventana.abrirEspecies.connect(lambda: (especies.show(), especies.raise_()))
 
         def volver() -> None:

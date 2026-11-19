@@ -175,8 +175,11 @@ def test_agregar_eliminar_extinguir_y_eliminar_especie():
     assert any(isinstance(a, EspecieExtinguida) and a.nombre == "Lobos" and a.especie_id == 2 for a in avisos)
     info = {e.nombre: e for e in m.obtenerInstantanea().especies}
     assert info["Lobos"].extinguida and info["Lobos"].poblacion == 0
-    with pytest.raises(ComandoInvalido):
-        m.aplicar(AgregarCriaturas(2, 3))  # extinguida: no se le agregan
+    m.aplicar(AgregarCriaturas(2, 3))  # una extinguida se puede repoblar
+    info = {e.nombre: e for e in m.obtenerInstantanea().especies}
+    assert info["Lobos"].poblacion == 3 and not info["Lobos"].extinguida
+    m.aplicar(ExtinguirEspecie(2))
+    m.avanzar()
 
     m.aplicar(EliminarEspecie(2))
     m.avanzar()
@@ -338,3 +341,27 @@ def test_provocar_y_cancelar_lluvia_y_sequia_desde_los_botones():
         m.aplicar(CancelarEvento(tipo))
         m.avanzar()
         assert tipo not in [e.tipo for e in m.obtenerInstantanea().eventos]
+
+
+def test_las_ordenes_sobre_especies_se_ven_de_inmediato_incluso_en_pausa():
+    m = motor()
+    m.aplicar(CrearEspecie("Conejos", 10))
+    assert m.obtenerInstantanea().total_criaturas == 10 and m.tick == 0
+    m.aplicar(AgregarCriaturas(1, 15))
+    assert m.obtenerInstantanea().total_criaturas == 25
+    m.aplicar(EliminarCriaturas(1, 5))
+    assert m.obtenerInstantanea().total_criaturas == 20
+    m.aplicar(ExtinguirEspecie(1))
+    assert m.obtenerInstantanea().especies[0].extinguida
+    assert any(isinstance(a, EspecieExtinguida) for a in m.avanzar())  # el aviso no se pierde
+
+
+def test_agregar_con_el_cupo_lleno_se_rechaza_con_un_mensaje_y_con_poco_cupo_agrega_las_que_caben():
+    m = motor()
+    m.aplicar(CrearEspecie("Conejos", 495))
+    m.aplicar(AgregarCriaturas(1, 50))
+    assert m.obtenerInstantanea().total_criaturas == 500
+    with pytest.raises(ComandoInvalido, match="500"):
+        m.aplicar(AgregarCriaturas(1, 1))
+    with pytest.raises(ComandoInvalido):
+        m.aplicar(CrearEspecie("Otra", 1))

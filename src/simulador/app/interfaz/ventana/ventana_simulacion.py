@@ -32,6 +32,7 @@ class VentanaSimulacion(QMainWindow):
 
     volverAlMenu = Signal()
     abrirEspecies = Signal()
+    errorMotor = Signal(str)  # el motor rechazo una orden: texto para el usuario
 
     def __init__(
         self,
@@ -232,6 +233,7 @@ class VentanaSimulacion(QMainWindow):
         errores = self._ejecutor.tomarErrores()
         if errores:  # el motor rechazo una orden: se le dice al usuario por que
             self.panel_eventos.mostrarError(str(errores[-1]))
+            self.errorMotor.emit(str(errores[-1]))
 
         # Sincronizar estado del botón de pausa
         en_pausa = self._ejecutor.en_pausa

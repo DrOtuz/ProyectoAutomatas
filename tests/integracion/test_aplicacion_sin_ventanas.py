@@ -68,3 +68,19 @@ def test_dos_motores_con_la_misma_semilla_dan_la_misma_huella():
         for _ in range(5):
             m.avanzar()
     assert a.huellaEstado() == b.huellaEstado()
+
+
+def test_agregar_criaturas_con_el_ejecutor_en_pausa_se_ve_sin_reanudar():
+    from simulador.contratos.comandos import AgregarCriaturas
+
+    m = crearMotor(semilla=5)
+    e = Ejecutor(m, velocidad=30)  # arranca en pausa
+    e.iniciar()
+    e.enviar(CrearEspecie("Conejos", 10))
+    assert esperar(lambda: e.obtenerInstantanea().total_criaturas == 10)
+    e.enviar(AgregarCriaturas(1, 15))
+    assert esperar(lambda: e.obtenerInstantanea().total_criaturas == 25)
+    assert e.obtenerInstantanea().tick == 0 and e.en_pausa
+    e.enviar(AgregarCriaturas(99, 1))  # especie inexistente: el error llega a la interfaz
+    assert esperar(lambda: len(e.tomarErrores()) == 1)
+    e.detener()

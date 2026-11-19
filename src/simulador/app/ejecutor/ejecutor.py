@@ -144,16 +144,22 @@ class Ejecutor:
             raise ValueError(f"La velocidad debe estar entre {minima} y {maxima}")
 
     def _aplicarPendientes(self) -> None:
+        aplicados = False
         while True:
             try:
                 comando = self._comandos.get_nowait()
             except queue.Empty:
-                return
+                break
             try:
                 self._motor.aplicar(comando)
+                aplicados = True
             except ErrorSimulador as error:
                 with self._cerrojo:
                     self._errores.append(error)
+        if aplicados:  # algunas ordenes se ven de inmediato: tambien con el motor en pausa
+            instantanea = self._motor.obtenerInstantanea()
+            with self._cerrojo:
+                self._instantanea = instantanea
 
     def _guardar(self) -> None:
         with self._cerrojo:

@@ -144,7 +144,6 @@ class SimuladorEcosistema(Motor):
         return self.ciclo.reloj.tick
 
     def avanzar(self) -> list[Aviso]:
-        self._avisos = []
         pendientes, self._pendientes = self._pendientes, []
         for comando in pendientes:
             self._ejecutar(comando)
@@ -157,7 +156,8 @@ class SimuladorEcosistema(Motor):
             self.poblacion.eliminar_en(x, y)
         self.poblacion.actualizar(self._mapa_vida, self.ciclo.reloj.temperatura)
         self._avisosDeCupo(tick)
-        return self._avisos
+        avisos, self._avisos = self._avisos, []
+        return avisos
 
     def aplicar(self, comando: Comando) -> None:
         """Valida y encola. Eventos e incendios se encolan en sus propios gestores, que ya
@@ -172,8 +172,12 @@ class SimuladorEcosistema(Motor):
             self._provocar(comando)
         elif isinstance(comando, cmd.CancelarEvento):
             self._cancelar(comando)
-        else:
+        elif isinstance(comando, cmd.FijarNutrientes):
             self._pendientes.append(comando)
+        else:
+            # Las ordenes sobre especies y criaturas se aplican ya, no al tick siguiente: asi se
+            # ven tambien con la simulacion en pausa (la ventana de especies lo promete).
+            self._ejecutar(comando)
 
     def obtenerInstantanea(self) -> Instantanea:
         if self._cache_terreno is None or self._cache_terreno[0] != self.tick:
@@ -332,6 +336,7 @@ class SimuladorEcosistema(Motor):
                 raise ComandoInvalido("Ya existe una especie con ese nombre (o fue eliminada).")
             if not isinstance(c.cantidad, int) or c.cantidad < 1:
                 raise ComandoInvalido("La cantidad debe ser al menos 1.")
+            self._exigirCupo()
             try:
                 Dieta(c.dieta)
             except ValueError as error:
@@ -341,13 +346,19 @@ class SimuladorEcosistema(Motor):
                     raise ComandoInvalido("Los genes son (tamano, velocidad, vision).")
                 self.cfg_vida.comprobar_estadisticas(*c.genes)
         elif isinstance(c, (cmd.AgregarCriaturas, cmd.EliminarCriaturas)):
-            self._especieViva(c.especie_id, activa=isinstance(c, cmd.AgregarCriaturas))
+            self._especieViva(c.especie_id)  # una extinguida puede repoblarse: Vida la reactiva
             if not isinstance(c.cantidad, int) or c.cantidad < 1:
                 raise ComandoInvalido("La cantidad debe ser al menos 1.")
+            if isinstance(c, cmd.AgregarCriaturas):
+                self._exigirCupo()
         elif isinstance(c, (cmd.ExtinguirEspecie, cmd.EliminarEspecie)):
             self._especieViva(c.especie_id)
         else:
             raise ComandoNoSoportado(f"No se reconoce el comando {type(c).__name__}.")
+
+    def _exigirCupo(self) -> None:
+        if self.poblacion.total() >= self.cfg_vida.MAX_CRIATURAS:
+            raise ComandoInvalido(f"Ya hay {self.cfg_vida.MAX_CRIATURAS} criaturas: no caben mas.")
 
     def _provocar(self, c: cmd.ProvocarEvento) -> None:
         try:
