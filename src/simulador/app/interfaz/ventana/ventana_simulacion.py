@@ -229,6 +229,9 @@ class VentanaSimulacion(QMainWindow):
         self.visor.actualizarInstantanea(instantanea)
         self.barra_estado.actualizar(instantanea)
         self.panel_eventos.actualizarEventos(instantanea.eventos)
+        errores = self._ejecutor.tomarErrores()
+        if errores:  # el motor rechazo una orden: se le dice al usuario por que
+            self.panel_eventos.mostrarError(str(errores[-1]))
 
         # Sincronizar estado del botón de pausa
         en_pausa = self._ejecutor.en_pausa

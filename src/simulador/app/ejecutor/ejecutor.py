@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import queue
 import threading
 import time
+from collections.abc import Callable
 
 from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento
@@ -48,6 +50,7 @@ class Ejecutor:
         self._pausa.set()  # arranca en pausa
         self._detener = threading.Event()
         self._hilo: threading.Thread | None = None
+        self._escuchas_tick: list[Callable[[Instantanea], None]] = []
 
     @property
     def activo(self) -> bool:
@@ -106,6 +109,12 @@ class Ejecutor:
             return
         self._hilo = threading.Thread(target=self._bucle, name="ejecutor", daemon=True)
         self._hilo.start()
+
+    def alAvanzar(self, escucha: Callable[[Instantanea], None]) -> None:
+        """Registra una funcion que se llama en el hilo del motor con la instantanea de cada
+        tick (para llevar series completas sin perder ticks). Debe ser rapida y segura entre
+        hilos; una excepcion suya se ignora para no detener la simulacion."""
+        self._escuchas_tick.append(escucha)
 
     def obtenerInstantanea(self) -> Instantanea:
         with self._cerrojo:
@@ -187,6 +196,9 @@ class Ejecutor:
                 with self._cerrojo:
                     self._instantanea = instantanea
                     self._avisos.extend(avisos)
+                for escucha in self._escuchas_tick:
+                    with contextlib.suppress(Exception):
+                        escucha(instantanea)
 
                 if (
                     self._instantanea.tick - self._ultimo_tick_guardado
@@ -202,5 +214,5 @@ class Ejecutor:
                     siguiente = time.monotonic()  # no acumular atraso
 
             self._guardar()
-        except Exception as error:  # noqa: BLE001 - el hilo guarda cualquier fallo del motor
+        except Exception as error:
             self._fallo = error

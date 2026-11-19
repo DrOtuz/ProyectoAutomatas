@@ -17,7 +17,8 @@ def test_valores_por_defecto_son_los_del_documento():
     assert (cfg.A, cfg.C, cfg.K) == (0.30, 0.05, 0.15)
     assert (cfg.T_OPT, cfg.ALFA) == (22, 0.15)
     assert cfg.SIGMA == 0.05
-    assert cfg.MAX_CRIATURAS == 1000
+    assert cfg.MAX_CRIATURAS == 500
+    assert cfg.COOLDOWN_REPRODUCCION == 60
     assert cfg.MAX_POR_CASILLA == 1
     # eficiencias y plantillas: valores calibrados por el equipo (no los del v0.1)
     assert cfg.ETA_PLANTA[Dieta.HERBIVORO] == 0.60

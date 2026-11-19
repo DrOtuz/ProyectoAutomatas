@@ -219,6 +219,17 @@ class SimuladorEcosistema(Motor):
         """Serie del historial de una especie: [(tick, valor), ...]. Ver Vida: HistorialEspecie."""
         return self.poblacion.historial[self._nombres[especie_id]].serie(metrica)
 
+    def seriesPorEspecie(self) -> dict[int, dict[str, list[tuple[int, float | None]]]]:
+        """Todo el historial guardado, por id de especie: para sembrar las graficas al abrir o
+        cargar una simulacion. Solo se llama antes de iniciar el hilo del Ejecutor."""
+        from simulador.vida.historial import METRICAS
+
+        return {
+            id_: {m: self.poblacion.historial[nombre].serie(m) for m in METRICAS}
+            for nombre, id_ in self._ids.items()
+            if nombre in self.poblacion.historial
+        }
+
     def historialDe(self, especie_id: int):
         return self.poblacion.historial[self._nombres[especie_id]]
 
@@ -339,15 +350,22 @@ class SimuladorEcosistema(Motor):
             raise ComandoNoSoportado(f"No se reconoce el comando {type(c).__name__}.")
 
     def _provocar(self, c: cmd.ProvocarEvento) -> None:
-        if c.tipo == TipoEvento.incendio and (c.foco_x is None or c.foco_y is None):
-            raise ComandoInvalido("El incendio necesita un foco en el mapa.")
         try:
             if c.tipo == TipoEvento.incendio:
-                self.fuego.provocarIncendio(c.foco_x, c.foco_y, c.radio)
+                x, y = (c.foco_x, c.foco_y) if c.foco_x is not None and c.foco_y is not None else self._focoAlAzar()
+                self.fuego.provocarIncendio(x, y, c.radio)
             else:
                 self.ciclo.eventos.provocarEvento(c.tipo.value)
         except ErrorSimulador as error:
             raise ComandoInvalido(str(error)) from error
+
+    def _focoAlAzar(self) -> tuple[int, int]:
+        """Foco para un incendio pedido sin lugar (el boton de la interfaz): una casilla con
+        vegetacion elegida al azar. Depende solo de la semilla y del tick, asi que es repetible."""
+        candidatas = [c.coordenada for c in self.mapa.casillas() if c.esInflamable()]
+        if not candidatas:
+            raise ComandoInvalido("No hay vegetacion que se pueda quemar.")
+        return candidatas[Random(self.semilla * 7919 + self.tick).randrange(len(candidatas))]
 
     def _cancelar(self, c: cmd.CancelarEvento) -> None:
         try:

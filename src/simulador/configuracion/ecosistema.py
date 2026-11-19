@@ -22,10 +22,10 @@ class ConfiguracionEcosistema:
 
 EVENTOS = {
     "lambda": {
-        "primavera": {"sequia": 0.15, "lluvia": 0.50, "foco": 0.10},
-        "verano": {"sequia": 0.50, "lluvia": 0.15, "foco": 0.50},
-        "otono": {"sequia": 0.10, "lluvia": 0.75, "foco": 0.05},
-        "invierno": {"sequia": 0.10, "lluvia": 0.40, "foco": 0.025},
+        "primavera": {"sequia": 0.15, "lluvia": 0.50, "foco": 0.20},
+        "verano": {"sequia": 0.50, "lluvia": 0.15, "foco": 1.00},
+        "otono": {"sequia": 0.10, "lluvia": 0.75, "foco": 0.10},
+        "invierno": {"sequia": 0.10, "lluvia": 0.40, "foco": 0.05},
     },
     "duracion": {"sequia": (0.3, 0.6), "lluvia": (0.10, 0.24)},
     "modificador_humedad": {"sequia": -0.35, "lluvia": 0.35},
@@ -59,8 +59,10 @@ FUEGO = {
     # ticks que una casilla quemada tarda en volver a tierra (RF-26)
     "ticks_para_regenerar": 150,
     # probabilidad base por vecina en llamas y por tick, segun la vegetacion de la casilla
-    # que podria prenderse (RF-33). Provisional.
-    "probabilidad_propagacion": {"pasto": 0.30, "arbol": 0.20},
+    # que podria prenderse (RF-33). Provisional. Bajados de 0.30/0.20 porque con eso 7 de cada 10
+    # incendios quemaban casi todo el mapa; con estos, la mitad se apaga casi enseguida y los
+    # grandes queman hasta un tercio (medido en 20 semillas, mapa de lagos y arboledas).
+    "probabilidad_propagacion": {"pasto": 0.12, "arbol": 0.08},
     # cuanto reduce la humedad la probabilidad: factor = max(0, 1 - peso * humedad). Provisional.
     "peso_humedad": 1.0,
     # factor de temperatura = max(0, 1 + sensibilidad * (T - referencia)). Provisional.

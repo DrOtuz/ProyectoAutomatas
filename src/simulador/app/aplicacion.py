@@ -60,6 +60,31 @@ def crearYGuardar(almacenamiento: Almacenamiento, nombre: str, terreno=None, sem
 # ================================================================================
 
 
+def _aplicarTemaClaro(app) -> None:  # pragma: no cover - necesita pantalla
+    """Fuerza colores claros. Los widgets ponen fondos claros a mano; si Windows esta en modo
+    oscuro, el texto que no tiene color propio salia blanco sobre blanco."""
+    from PySide6.QtGui import QColor, QPalette
+
+    app.setStyle("Fusion")
+    paleta = QPalette()
+    for rol, color in (
+        (QPalette.ColorRole.Window, "#F5F3EF"),
+        (QPalette.ColorRole.WindowText, "#1E1E1E"),
+        (QPalette.ColorRole.Base, "#FFFFFF"),
+        (QPalette.ColorRole.AlternateBase, "#F5F3EF"),
+        (QPalette.ColorRole.Text, "#1E1E1E"),
+        (QPalette.ColorRole.Button, "#FFFFFF"),
+        (QPalette.ColorRole.ButtonText, "#1E1E1E"),
+        (QPalette.ColorRole.ToolTipBase, "#FFFFFF"),
+        (QPalette.ColorRole.ToolTipText, "#1E1E1E"),
+        (QPalette.ColorRole.PlaceholderText, "#888888"),
+        (QPalette.ColorRole.Highlight, "#1565C0"),
+        (QPalette.ColorRole.HighlightedText, "#FFFFFF"),
+    ):
+        paleta.setColor(rol, QColor(color))
+    app.setPalette(paleta)
+
+
 def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesita pantalla
     import sys
 
@@ -76,6 +101,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
     )
     from simulador.app.interfaz.ventana.ventana_simulacion import VentanaSimulacion
     from simulador.app.interfaz.ventana_inicio import VentanaInicio
+    from simulador.app.registro_series import RegistroSeries
     from simulador.configuracion.app import ConfiguracionApp
     from simulador.contratos.comandos import (
         AgregarCriaturas,
@@ -86,6 +112,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
     )
 
     app = QApplication(argv if argv is not None else sys.argv)
+    _aplicarTemaClaro(app)
     configuracion = ConfiguracionApp()
     almacenamiento = AlmacenamientoSqlite(obtenerRutaBiblioteca())
     estado: dict = {"inicio": VentanaInicio(almacenamiento, configuracion), "sim": None, "especies": None}
@@ -93,13 +120,14 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
     class VentanaEspecies(QWidget):
         """Lista, creacion y detalle de especies sobre el ejecutor en marcha."""
 
-        def __init__(self, ejecutor: Ejecutor, nombre: str) -> None:
+        def __init__(self, ejecutor: Ejecutor, nombre: str, registro: RegistroSeries) -> None:
             super().__init__()
+            self._registro = registro
+            self._version_vista = -1
             self.setWindowTitle(f"Especies - {nombre}")
             self.resize(900, 640)
             self._ejecutor = ejecutor
             self._detalle_id: int | None = None
-            self._ultimo_tick = -1
             self._pila = QStackedWidget()
             self._lista = ListaEspeciesWidget(nombre)
             self._crear = CrearEspecieWidget()
@@ -134,6 +162,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
                 return
             self._detalle = self._nuevoDetalle()
             self._detalle_id = especie_id
+            self._version_vista = -1  # fuerza a dibujar la serie completa al abrir
             self._detalle.fijarEspecie(info)
             self._pila.setCurrentWidget(self._detalle)
 
@@ -162,18 +191,17 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
         def refrescar(self) -> None:
             instantanea = self._ejecutor.obtenerInstantanea()
             self._lista.actualizar(instantanea.especies)
-            if self._detalle_id is None or instantanea.tick == self._ultimo_tick:
+            if self._detalle_id is None:
                 return
-            self._ultimo_tick = instantanea.tick
             info = next((e for e in instantanea.especies if e.especie_id == self._detalle_id), None)
             if info is None:
                 self._volverALista()
                 return
             self._detalle.fijarEspecie(info)
-            if info.energia is not None:
-                self._detalle.registrarMuestra(
-                    instantanea.tick, info.poblacion, info.velocidad, info.energia, info.vision, info.tamano
-                )
+            if self._registro.version != self._version_vista:
+                self._version_vista = self._registro.version
+                ticks, valores = self._registro.serie(self._detalle_id)
+                self._detalle.cargarSeries(ticks, valores)
 
     def abrirSimulacion(motor, nombre: str, simulacion_id: int, velocidad: int) -> None:
         ejecutor = Ejecutor(
@@ -183,8 +211,11 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             almacenamiento=almacenamiento,
             simulacion_id=simulacion_id,
         )
+        registro = RegistroSeries()
+        registro.sembrar(motor.seriesPorEspecie())
+        ejecutor.alAvanzar(registro.registrar)
         ventana = VentanaSimulacion(ejecutor, nombre, almacenamiento, simulacion_id, configuracion)
-        especies = VentanaEspecies(ejecutor, nombre)
+        especies = VentanaEspecies(ejecutor, nombre, registro)
         ventana.abrirEspecies.connect(lambda: (especies.show(), especies.raise_()))
 
         def volver() -> None:

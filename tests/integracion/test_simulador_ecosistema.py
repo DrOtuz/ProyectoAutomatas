@@ -69,7 +69,7 @@ def test_la_instantanea_tiene_la_forma_del_contrato():
     assert isinstance(i, Instantanea)
     assert i.terreno.shape == (100, 100) and i.terreno.dtype == np.uint8
     assert i.criaturas.dtype == np.int32 and i.criaturas.shape[1] == 3
-    assert i.total_criaturas == 44 and i.cupo == 1000
+    assert i.total_criaturas == 44 and i.cupo == 500
     assert not i.terreno.flags.writeable and not i.criaturas.flags.writeable
     assert [(e.nombre, e.poblacion, e.extinguida) for e in i.especies] == [("Conejos", 40, False), ("Lobos", 4, False)]
     assert set(i.criaturas[:, 2]) == {1, 2}
@@ -118,7 +118,6 @@ def test_un_comando_tiene_efecto_en_el_tick_siguiente():
         EliminarCriaturas(99, 5),
         ExtinguirEspecie(99),
         EliminarEspecie(99),
-        ProvocarEvento(TipoEvento.incendio),
         ProvocarEvento(TipoEvento.incendio, 5, 5, radio=9),
         ProvocarEvento(TipoEvento.incendio, 0, 5, radio=0),  # agua
         CancelarEvento(TipoEvento.sequia),
@@ -187,13 +186,13 @@ def test_agregar_eliminar_extinguir_y_eliminar_especie():
 
 def test_aviso_de_cupo_se_da_una_sola_vez():
     m = motor()
-    m.aplicar(CrearEspecie("Conejos", 990))
+    m.aplicar(CrearEspecie("Conejos", 490))
     avisos = avanzar(m, 3)
-    m.aplicar(AgregarCriaturas(1, 500))
+    m.aplicar(AgregarCriaturas(1, 200))
     avisos += avanzar(m, 3)
     cupos = [a for a in avisos if isinstance(a, CupoAlcanzado)]
-    assert len(cupos) == 1 and cupos[0].cupo == 1000
-    assert m.obtenerInstantanea().total_criaturas <= 1000
+    assert len(cupos) == 1 and cupos[0].cupo == 500
+    assert m.obtenerInstantanea().total_criaturas <= 500
 
 
 # ---------- eventos y fuego ----------
@@ -282,11 +281,11 @@ def test_un_estado_danado_se_rechaza_con_un_error_del_simulador():
         SimuladorEcosistema.desdeEstado(b"no es un estado")
 
 
-def test_con_1000_criaturas_el_estado_cabe_en_20_mb():
+def test_con_500_criaturas_el_estado_cabe_en_20_mb():
     m = motor()
-    m.aplicar(CrearEspecie("Conejos", 1000))
+    m.aplicar(CrearEspecie("Conejos", 500))
     avanzar(m, 3)
-    assert m.obtenerInstantanea().total_criaturas > 900
+    assert m.obtenerInstantanea().total_criaturas > 450
     assert len(m.aEstado()) < 20 * 1024 * 1024
 
 
@@ -308,3 +307,34 @@ def test_un_mapa_dibujado_solo_con_tierra_y_agua_recibe_vegetacion_inicial():
     m.aplicar(CrearEspecie("Conejos", 30))
     avanzar(m, 20)
     assert m.obtenerInstantanea().total_criaturas > 0
+
+
+def test_un_incendio_sin_foco_elige_una_casilla_con_vegetacion():
+    m = motor()
+    m.aplicar(ProvocarEvento(TipoEvento.incendio))  # lo que manda el boton de la interfaz
+    avisos = m.avanzar()
+    assert any(isinstance(a, EventoNaturalIniciado) and a.tipo == TipoEvento.incendio for a in avisos)
+    assert (m.obtenerInstantanea().terreno == int(EstadoCasilla.llamas)).sum() == 1
+    m.aplicar(CancelarEvento(TipoEvento.incendio))
+    assert EventoNaturalTerminado(TipoEvento.incendio, 2, cancelado=True) in m.avanzar()
+    assert m.obtenerInstantanea().eventos == ()
+
+
+def test_sin_vegetacion_no_hay_incendio_posible():
+    m = SimuladorEcosistema(np.full((100, 100), TIERRA, dtype=np.uint8), semilla=1)
+    m.mapa.casilla(5, 5).tipo = EstadoCasilla.tierra
+    for c in m.mapa.casillas():
+        c.tipo = EstadoCasilla.tierra
+    with pytest.raises(ComandoInvalido):
+        m.aplicar(ProvocarEvento(TipoEvento.incendio))
+
+
+def test_provocar_y_cancelar_lluvia_y_sequia_desde_los_botones():
+    m = motor()
+    for tipo in (TipoEvento.lluvia, TipoEvento.sequia):
+        m.aplicar(ProvocarEvento(tipo))
+        m.avanzar()
+        assert tipo in [e.tipo for e in m.obtenerInstantanea().eventos]
+        m.aplicar(CancelarEvento(tipo))
+        m.avanzar()
+        assert tipo not in [e.tipo for e in m.obtenerInstantanea().eventos]

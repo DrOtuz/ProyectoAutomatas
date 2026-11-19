@@ -160,6 +160,16 @@ class ListaEspeciesWidget(QWidget):
             return
 
         self.pila.setCurrentWidget(self.vista_tabla)
+
+        # Se refresca varias veces por segundo: si es la misma lista de especies solo se
+        # cambian los textos. Rehacer los botones en cada refresco hacia que se perdieran clics.
+        ids = [e.especie_id for e in self._especies]
+        if ids == getattr(self, "_ids_mostrados", None):
+            for fila, esp in enumerate(self._especies):
+                self.tabla.item(fila, 1).setText("○ Extinta" if esp.extinguida else "● Viva")
+                self.tabla.item(fila, 2).setText(f"{esp.poblacion:,}")
+            return
+        self._ids_mostrados = ids
         self.tabla.setRowCount(len(self._especies))
 
         for fila, esp in enumerate(self._especies):

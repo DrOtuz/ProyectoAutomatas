@@ -59,6 +59,7 @@ class ConfigVida:
     UMBRAL_SALIDA_PAREJA_PCT: float = 0.50  # por debajo, deja de buscar pareja
     COSTO_REPRODUCCION: float = 25.0  # energia que paga cada padre
     ENERGIA_CRIA: float = 30.0  # energia con la que nace la cria
+    COOLDOWN_REPRODUCCION: int = 60  # ticks que debe esperar un padre antes de reproducirse otra vez
 
     # --- metabolismo: gasto = f_T * S^-EXPONENTE_KLEIBER * (A + C*R + K*V^2*m)
     A: float = 0.30
@@ -92,7 +93,7 @@ class ConfigVida:
     VARIACION_VIDA: float = 0.15  # +-15 % al nacer
 
     # --- mundo -------------------------------------------------------------
-    MAX_CRIATURAS: int = 1000
+    MAX_CRIATURAS: int = 500
     MAX_POR_CASILLA: int = 1
     RADIO_BUSQUEDA_CRIA: int = 2  # a que distancia de los padres puede nacer
     INERCIA_EXPLORAR: float = 0.7  # probabilidad de seguir recto al explorar
@@ -137,6 +138,7 @@ class ConfigVida:
             "se exige 0 < UMBRAL_SALIDA_PAREJA_PCT < UMBRAL_REPRODUCCION_PCT <= 1",
         )
         exigir(self.COSTO_REPRODUCCION > 0, "COSTO_REPRODUCCION debe ser > 0")
+        exigir(self.COOLDOWN_REPRODUCCION >= 0, "COOLDOWN_REPRODUCCION debe ser >= 0")
         exigir(
             self.COSTO_REPRODUCCION < self.umbral_reproduccion,
             "COSTO_REPRODUCCION debe ser menor que el umbral de reproduccion",

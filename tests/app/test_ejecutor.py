@@ -29,7 +29,7 @@ def esperarHasta(condicion, limite=3.0):
 def crearEjecutor():
     creados = []
 
-    def crear(motor=None, velocidad=60):
+    def crear(motor=None, velocidad=30):
         ejecutor = Ejecutor(motor or MotorFalso(), velocidad)
         creados.append(ejecutor)
         ejecutor.iniciar()
@@ -158,9 +158,9 @@ def test_detener_termina_el_hilo(crearEjecutor):
 def test_autoguardado_al_pausar():
     almacenamiento = AlmacenamientoMemoria()
     motor = MotorFalso()
-    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=30)
     ejecutor = Ejecutor(
-        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+        motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
     )
     ejecutor.iniciar()
     ejecutor.reanudar()
@@ -177,9 +177,9 @@ def test_autoguardado_al_pausar():
 def test_autoguardado_al_detener():
     almacenamiento = AlmacenamientoMemoria()
     motor = MotorFalso()
-    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=30)
     ejecutor = Ejecutor(
-        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+        motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
     )
     ejecutor.iniciar()
     ejecutor.reanudar()
@@ -194,10 +194,10 @@ def test_autoguardado_periodico_cada_n_ticks():
     configuracion = ConfiguracionApp(autoguardado_cada_ticks=4)
     almacenamiento = AlmacenamientoMemoria()
     motor = MotorFalso()
-    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=30)
     ejecutor = Ejecutor(
         motor,
-        velocidad=60,
+        velocidad=30,
         configuracion=configuracion,
         almacenamiento=almacenamiento,
         simulacion_id=resumen.simulacion_id,
@@ -212,9 +212,9 @@ def test_autoguardado_periodico_cada_n_ticks():
 def test_solicitar_guardado_manual():
     almacenamiento = AlmacenamientoMemoria()
     motor = MotorFalso()
-    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=30)
     ejecutor = Ejecutor(
-        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+        motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
     )
     ejecutor.iniciar()
     ejecutor.solicitarGuardado()
@@ -236,10 +236,10 @@ class MotorConRastreoDeHilo(MotorFalso):
 def test_a_estado_solo_se_llama_desde_el_hilo_del_ejecutor():
     almacenamiento = AlmacenamientoMemoria()
     motor = MotorConRastreoDeHilo()
-    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=60)
+    resumen = almacenamiento.crear("Test", motor.aEstado(), tick=0, velocidad=30)
     motor.hilo_a_estado = None  # resetear tras crear
     ejecutor = Ejecutor(
-        motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
+        motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id
     )
     ejecutor.iniciar()
     ejecutor.solicitarGuardado()

@@ -30,8 +30,8 @@ def test_el_mapa_inicial_es_valido_y_reproducible():
 def test_crear_correr_guardar_cerrar_y_cargar(tmp_path):
     almacenamiento = AlmacenamientoSqlite(tmp_path / "biblioteca.db")
     try:
-        motor, resumen = crearYGuardar(almacenamiento, "Prueba", semilla=2, velocidad=60)
-        ejecutor = Ejecutor(motor, velocidad=60, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id)
+        motor, resumen = crearYGuardar(almacenamiento, "Prueba", semilla=2, velocidad=30)
+        ejecutor = Ejecutor(motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id)
         ejecutor.iniciar()
         ejecutor.enviar(CrearEspecie("Conejos", 40, "herbivoro"))
         ejecutor.enviar(CrearEspecie("Lobos", 4, "carnivoro", (2.0, 1.5, 6.0)))
