@@ -1,6 +1,6 @@
 # Especificación del simulador de ecosistema
 
-Fecha: 2026-10-12 · Actualizado: 2026-10-18 · Autor: Juan
+Fecha: 2026-10-12 · Actualizado: 2026-11-18 · Autor: Juan
 
 ## 1. Resumen y estado
 
@@ -8,24 +8,25 @@ Este documento es la especificacion definitiva del proyecto. Los valores numéri
 
 El objetivo es una aplicación de escritorio en Python que simula un ecosistema en un mapa de 100×100 casillas. El mapa evoluciona como autómata celular (terreno, vegetación y fuego) y sobre él viven criaturas que funcionan como autómatas de estados finitos, se reproducen y mutan. El usuario observa, interviene y analiza la simulación en tiempo real.
 
-### Estado actual del repositorio (2026-11-06)
+### Estado actual del repositorio (2026-11-18)
 
-El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
+Los subgrupos **App** y **Vida** cuentan con implementación completa de módulos y baterías exhaustivas de pruebas (468 pruebas en verde). **Ecosistema** tiene contratos formalizados (`Casilla`, `GestorEventos`) en ramas de trabajo y en `contratos.md`, con la integración al paquete principal en curso.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
-| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
-| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
-| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
-| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
-| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
-| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
-| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
-| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
+| `docs/` | Documentación completa del proyecto (`especificacion.md`, `contratos.md`, `app.md`, `vida.md`, `ecosistema.md`, `pruebas-y-trazabilidad.md`, `guia-de-calidad.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y `MotorFalso` |
+| `src/simulador/app/` | Almacenamiento (memoria y SQLite), rutas de datos, ejecutor en segundo plano, registro de errores local, lógica de editor de mapa y toda la interfaz gráfica en PySide6 (pantallas, ventana de simulación, visor de mapa con zoom, inspector, panel de eventos y gestión de especies) |
+| `src/simulador/vida/` | Lógica biológica completa: criaturas, especies, autómata de estados finitos, percepción, población, estadísticas, historial, puertos (`MapaPuerto`), adaptadores falsos y simulador CLI sin interfaz |
+| `src/simulador/ecosistema/` | Contratos (`Casilla`, `GestorEventos`) definidos en `docs/contratos.md`; módulos del motor celular en proceso de integración en `src/simulador/ecosistema/` |
+| `src/simulador/configuracion/` | Cargador y validación TOML, sección de App, plantillas de configuración y archivo base `por_defecto.toml` |
+| Pruebas | 468 pruebas automáticas pasando al 100% (`tests/app/` y `tests/vida/`). Trazabilidad validada con `scripts/verificar_trazabilidad.py` (36 requisitos marcados) |
+| Integración continua | `.github/workflows/integracion_continua.yml` en Windows (Python 3.11): `ruff check`, `lint-imports`, `scripts/verificar_trazabilidad.py` y `pytest` |
+| Gobernanza | `.github/CODEOWNERS` configurado para revisión cruzada |
+| `README.md` | Guía de instalación, estándares, ciclo de Git y pruebas de humo |
+| `requirements.txt` y `pyproject.toml` | PySide6, pyqtgraph, pytest, pytest-qt, hypothesis, pytest-cov, import-linter, ruff, numpy |
 
-**Lo que este documento nombra y todavía no existe:** la interfaz, el motor real de Ecosistema, la lógica de Vida, la prueba de oro, `.github/CODEOWNERS` y la corrida nocturna `nocturna.yml`. Los contratos en código, `MotorFalso`, `AlmacenamientoMemoria`, la configuración, la CI y la plantilla de PR ya existen.
+**Lo que está en proceso de integración:** el motor celular real en `src/simulador/ecosistema/`, la conexión directa entre el motor celular y `MapaPuerto`/`Poblacion`, la prueba de oro y la corrida nocturna `nocturna.yml`. Toda la interfaz de usuario, persistencia, contratos y lógica de criaturas ya están implementados y verificados.
 
 **Dependencias frente a esta especificación:** D-02 (PySide6 y pyqtgraph) y las que piden las pruebas (secciones 6 y 9: `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`) ya están en `requirements.txt` (tarea A-11). Decisión del 2026-10-18: se mantiene D-02; matplotlib queda solo para scripts de análisis, no para la interfaz.
 

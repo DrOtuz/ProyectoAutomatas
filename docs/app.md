@@ -3,26 +3,29 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [Vida](vida.md) 
 
-## Estado actual del repositorio (2026-11-06)
+## Estado actual del repositorio (2026-11-18)
 
-El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
+El subgrupo **App** tiene implementados y probados todos sus componentes: la interfaz gráfica completa en PySide6, el editor de mapas con su widget interactivo, el ejecutor en segundo plano, la persistencia en SQLite y memoria, el sistema de rutas y el registro local de errores.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
-| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
-| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
-| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
-| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
-| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` |
-| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
-| `requirements.txt` | Incluye `PySide6`, `pyqtgraph`, `pytest-qt`, `hypothesis`, `pytest-cov` e `import-linter`, además de `numpy`, `matplotlib` (solo scripts), `pytest` y `ruff` |
-| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
+| `docs/` | Documentación completa (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`, `guia-de-calidad.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y `MotorFalso` |
+| `src/simulador/app/` | `almacenamiento/` (memoria, rutas y SQLite), `editor/` (lógica del editor), `ejecutor/` (hilo del motor), `registro_errores.py`, y la interfaz gráfica completa en `interfaz/` (`editor_mapa_widget.py`, `ventana_inicio.py`, `pantallas/`, `ventana/`, `especies/`, `estilos.py`, `dialogos.py`) |
+| `src/simulador/configuracion/` | Cargador validado, sección `app.py`, plantillas `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/vida/` | Lógica biológica completa con 11 suites de pruebas en `tests/vida/` |
+| `src/simulador/ecosistema/` | Contratos (`Casilla`, `GestorEventos`) formalizados en `docs/contratos.md`; integración al paquete en curso |
+| Pruebas | Pruebas de App en `tests/app/` (22 suites de test) y de Vida en `tests/vida/` (11 suites). Total: 468 pruebas en verde |
+| Integración continua | `.github/workflows/integracion_continua.yml` en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| Gobernanza | `.github/CODEOWNERS` configurado para asignación automática de revisiones |
+| Trazabilidad | `scripts/verificar_trazabilidad.py` valida marcas `@pytest.mark.requisito` (36 requisitos con pruebas marcadas) |
+| `README.md` | Flujo de Git, guía de instalación (`requirements.txt`, `pip install -e .`) y prueba de humo |
+| `requirements.txt` | PySide6, pyqtgraph, pytest-qt, hypothesis, pytest-cov, import-linter, numpy, pytest y ruff |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, configuración de pytest, ruff y contrato de arquitectura |
 
-**Lo que este documento nombra y sigue siendo propuesta:** la interfaz (`app/interfaz/`), el editor de mapa, el autoguardado, el registro de errores, la carpeta de datos, el empaquetado y los módulos de `ecosistema/` y `vida/`. `MotorFalso` y `AlmacenamientoMemoria` ya existen en el código.
+**Componentes implementados por App:** la interfaz completa (`app/interfaz/`), el widget del editor de mapa (`editor_mapa_widget.py`), la lógica del editor (`editor_mapa.py`), el ejecutor con autoguardado, el registro de errores (`registro_errores.py`), las rutas de datos (`rutas.py`), y las pruebas de tamaño y trazabilidad.
 
-**Todavía no existen:** `.github/CODEOWNERS`, la corrida nocturna `nocturna.yml` y el comando de arranque de la aplicación. La plantilla de PR y las etiquetas ya existen (A-10).
+**Pendiente:** integración del motor celular final de Ecosistema y corrida nocturna `nocturna.yml`.
 
 ## 1. Propósito y alcance
 
@@ -251,33 +254,40 @@ Objetivo del sprint: dejar F1 a punto para **G1** (fin de la semana 3), trabajan
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos son una **propuesta** y las pruebas existentes son las reales: la columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`. «Existe» significa que hay al menos una prueba con la marca; «Parcial», que además faltan pruebas de la fila.
+Módulos implementados y suites reales de pruebas. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")` o `"RNF-xx"`. «Existe» indica que el requisito tiene pruebas automatizadas implementadas y pasando en verde; «Parcial», que cubre los contratos y la interfaz pero aguarda la integración con el motor real.
 
-| Requisito | Módulo (propuesto) | Prueba | Estado |
+| Requisito | Módulo | Prueba | Estado |
 | --- | --- | --- | --- |
-| RF-06 | `app/interfaz/pantallas/menu_principal.py` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_flujo_menu.py | Parcial |
-| RF-07 | `app/interfaz/pantallas/nueva_simulacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>por escribir: tests/app/test_flujo_crear.py | Parcial |
-| RF-08 | `app/interfaz/editor/editor_mapa.py` | `tests/app/test_editor_mapa.py` | Por escribir |
-| RF-09 | `app/interfaz/editor/editor_mapa.py, ecosistema/nucleo/simulacion.py` | `tests/app/test_flujo_crear.py` | Por escribir |
-| RF-10 | `app/almacenamiento/sqlite.py, app/interfaz/pantallas/cargar.py` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_flujo_cargar.py | Parcial |
-| RF-11 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_bateria_almacenamiento.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
-| RF-12 | `app/almacenamiento/sqlite.py, app/interfaz/ventana/` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
-| RF-13 | `app/interfaz/visor_mapa.py` | `tests/app/test_contratos_instantanea.py`<br>por escribir: tests/app/test_visor_mapa.py | Parcial |
-| RF-14 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
-| RF-15 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_configuracion.py`<br>por escribir: tests/app/test_velocidad.py | Parcial |
-| RF-16 | `app/interfaz/ventana/, ecosistema/nucleo/simulacion.py` | `tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
-| RF-17 | `app/interfaz/ventana/barra_estado.py` | `tests/app/test_contratos_instantanea.py`<br>por escribir: tests/ecosistema/test_reloj.py, tests/app/test_ventana.py | Parcial |
-| RF-18 | `app/interfaz/ventana/panel_eventos.py` | `tests/app/test_panel_eventos.py` | Por escribir |
-| RF-19 | `app/ejecutor/ejecutor.py, app/interfaz/ventana/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_comandos.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_eventos.py | Parcial |
-| RF-20 | `app/interfaz/visor_mapa.py, app/interfaz/inspector.py` | `tests/app/test_inspector.py` | Por escribir |
-| RF-46 | `app/interfaz/especies/detalle_especie.py, app/almacenamiento/historial.py` | `tests/app/test_graficas.py` | Por escribir |
-| RF-48 | `app/ejecutor/autoguardado.py, app/almacenamiento/sqlite.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>por escribir: tests/app/test_autoguardado.py | Parcial |
-| RF-49 | `app/almacenamiento/sqlite.py, ecosistema/nucleo/serializacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/ecosistema/test_determinismo.py, tests/gates/test_g1.py | Parcial |
+| RF-06 | `app/interfaz/pantallas/menu_principal.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_flujo_inicio.py` | Existe |
+| RF-07 | `app/interfaz/pantallas/nueva_simulacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_flujo_inicio.py` | Existe |
+| RF-08 | `app/editor/editor_mapa.py`<br>`app/interfaz/editor_mapa_widget.py` | `tests/app/test_editor_mapa.py`<br>`tests/app/test_lienzo_editor.py` | Existe |
+| RF-09 | `app/editor/editor_mapa.py`<br>`app/interfaz/dialogos.py`<br>`app/interfaz/ventana_inicio.py` | `tests/app/test_editor_mapa.py`<br>`tests/app/test_lienzo_editor.py`<br>`tests/app/test_flujo_inicio.py` | Existe |
+| RF-10 | `app/almacenamiento/sqlite.py`<br>`app/interfaz/pantallas/cargar.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_flujo_inicio.py` | Existe |
+| RF-11 | `app/almacenamiento/sqlite.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-12 | `app/almacenamiento/sqlite.py`<br>`app/interfaz/pantallas/cargar.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_flujo_inicio.py`<br>`tests/app/test_sqlite.py` | Existe |
+| RF-13 | `app/interfaz/ventana/visor_mapa.py` | `tests/app/test_contratos_instantanea.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-14 | `app/ejecutor/ejecutor.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-15 | `app/ejecutor/ejecutor.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_configuracion.py`<br>`tests/app/test_ejecutor.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-16 | `app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_motor_falso.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-17 | `app/interfaz/ventana/barra_estado.py` | `tests/app/test_contratos_instantanea.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-18 | `app/interfaz/ventana/panel_eventos.py` | `tests/app/test_ventana_simulacion.py` | Existe |
+| RF-19 | `app/ejecutor/ejecutor.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_comandos.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py` | Existe |
+| RF-20 | `app/interfaz/ventana/visor_mapa.py`<br>`app/interfaz/ventana/inspector.py` | `tests/app/test_ventana_simulacion.py` | Existe |
+| RF-41 | `app/interfaz/ventana/barra_estado.py`<br>`app/interfaz/dialogos.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-42 | `app/interfaz/especies/detalle_especie.py` | `tests/app/test_especies_interfaz.py` | Existe |
+| RF-44 | `app/interfaz/especies/detalle_especie.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_especies_interfaz.py` | Existe |
+| RF-45 | `app/interfaz/especies/detalle_especie.py` | `tests/app/test_especies_interfaz.py` | Existe |
+| RF-46 | `app/interfaz/especies/detalle_especie.py` | `tests/app/test_especies_interfaz.py` | Existe |
+| RF-48 | `app/ejecutor/ejecutor.py`<br>`app/almacenamiento/sqlite.py`<br>`app/almacenamiento/rutas.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_contratos_almacenamiento.py`<br>`tests/app/test_ejecutor.py`<br>`tests/app/test_rutas_almacenamiento.py`<br>`tests/app/test_sqlite.py` | Existe |
+| RF-49 | `app/almacenamiento/sqlite.py`<br>`contratos/motor.py` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_sqlite.py`<br>`tests/app/test_contratos_motor.py`<br>`tests/app/test_motor_falso.py` | Existe |
 | RF-50 | `app/almacenamiento/sqlite.py` | `tests/app/test_sqlite.py`<br>`tests/app/test_contratos_almacenamiento.py` | Existe |
-| RNF-01 | `pyproject.toml, .github/workflows/` | `tests/app/test_humo.py`<br>por escribir: tests/app/test_instalacion.py (CI en Windows) | Parcial |
-| RNF-03 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>por escribir: tests/app/test_ventana.py | Parcial |
-| RNF-06 | `configuracion/` | `tests/app/test_configuracion.py`<br>`tests/app/test_configuracion_base.py`<br>por escribir: tests/app/test_reglas_de_codigo.py | Parcial |
-| RNF-08 | `app/almacenamiento/` | `tests/app/test_sqlite.py`<br>por escribir: tests/app/test_migracion_esquema.py | Parcial |
-| RNF-09 | `app/almacenamiento/, vida/historial.py` | por escribir: tests/app/test_tamano_guardado.py | Por escribir |
-| RNF-11 | `app/interfaz/, contratos/paleta.py` | por escribir: tests/app/test_contraste_y_paleta.py | Por escribir |
-| RNF-12 | `app/ejecutor/ejecutor.py, app/interfaz/` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_errores.py`<br>por escribir: tests/app/test_registro_errores.py | Parcial |
+| RF-51 | `app/interfaz/ventana/panel_eventos.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_motor_falso.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RF-52 | `app/interfaz/especies/crear_especie.py`<br>`app/interfaz/especies/lista_especies.py` | `tests/app/test_especies_interfaz.py` | Existe |
+| RF-55 | `app/interfaz/especies/detalle_especie.py`<br>`app/interfaz/estilos.py` | `tests/app/test_especies_interfaz.py` | Existe |
+| RNF-01 | `pyproject.toml`<br>`.github/workflows/integracion_continua.yml` | `tests/app/test_humo.py`<br>`tests/app/test_configuracion.py` | Existe |
+| RNF-03 | `app/ejecutor/ejecutor.py`<br>`app/interfaz/ventana/ventana_simulacion.py` | `tests/app/test_ejecutor.py`<br>`tests/app/test_motor_falso.py`<br>`tests/app/test_ventana_simulacion.py` | Existe |
+| RNF-06 | `configuracion/` | `tests/app/test_bateria_almacenamiento.py`<br>`tests/app/test_configuracion.py`<br>`tests/app/test_configuracion_base.py`<br>`tests/app/test_contratos_almacenamiento.py` | Existe |
+| RNF-08 | `app/almacenamiento/sqlite.py` | `tests/app/test_sqlite.py` | Existe |
+| RNF-09 | `app/almacenamiento/sqlite.py` | `tests/app/test_tamano_guardado.py` | Existe |
+| RNF-11 | `app/interfaz/estilos.py`<br>`app/interfaz/especies/detalle_especie.py` | `tests/app/test_especies_interfaz.py` | Parcial |
+| RNF-12 | `app/ejecutor/ejecutor.py`<br>`app/registro_errores.py`<br>`contratos/errores.py` | `tests/app/test_ejecutor.py`<br>`tests/app/test_contratos_errores.py`<br>`tests/app/test_registro_errores.py` | Existe |

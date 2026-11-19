@@ -159,9 +159,150 @@ Requisitos: RF-28, RF-29, RF-30, RF-31, RF-51
 
 # Grupo Ecosistema -> Grupo App
 
+Ecosistema entrega a App la implementacion concreta del motor (`Simulacion`), el estado celular ensamblado en la `Instantanea` y el acceso de lectura para inspeccion de casillas.
+
+### Simulacion.aEstado
+- **Firma:** `aEstado() -> bytes`
+- **Descripcion:** serializa el estado completo del mundo (mapa, clima, eventos, especies, criaturas y generador) a un bloque de bytes autodescrito.
+- **Parametros:** ninguno.
+- **Retorno:** bytes del estado completo.
+- **Errores:** `ErrorSimulador` si ocurre un fallo al serializar.
+
+### Simulacion.aplicar
+- **Firma:** `aplicar(comando: Comando) -> None`
+- **Descripcion:** recibe un comando de la aplicacion y lo encola para aplicarlo al inicio del tick siguiente.
+- **Parametros:** `comando` instancia de comando (`FijarNutrientes`, `ProvocarEvento`, `CancelarEvento`, etc.).
+- **Retorno:** nada.
+- **Errores:** `ComandoInvalido` si los parametros no son validos; `ComandoNoSoportado` si la accion no esta disponible.
+
+### Simulacion.avanzar
+- **Firma:** `avanzar() -> list[Aviso]`
+- **Descripcion:** ejecuta un paso completo de la simulacion (11 pasos del tick) y devuelve los avisos ocurridos.
+- **Parametros:** ninguno.
+- **Retorno:** lista de instancias de `Aviso` generadas en ese tick.
+- **Errores:** `ErrorSimulador` si ocurre una violacion de invariantes.
+
+### Simulacion.desdeEstado
+- **Firma:** `desdeEstado(estado: bytes) -> Simulacion` (metodo de clase)
+- **Descripcion:** reconstruye una simulacion completa a partir de los bytes producidos por `aEstado`.
+- **Parametros:** `estado`: bloque de bytes con cabecera de version.
+- **Retorno:** instancia de `Simulacion` lista para ejecutarse.
+- **Errores:** `ErrorSimulador` si el formato o version es incompatible.
+
+### Simulacion.huellaEstado
+- **Firma:** `huellaEstado() -> str`
+- **Descripcion:** hash criptografico o numerico del estado total del motor para verificacion de determinismo y prueba de oro.
+- **Parametros:** ninguno.
+- **Retorno:** cadena hexadecimal representativa de la huella.
+
+### Simulacion.inspeccionarCasilla
+- **Firma:** `inspeccionarCasilla(x: int, y: int) -> dict`
+- **Descripcion:** devuelve la informacion detallada de una celda del mapa para el widget inspector de la interfaz.
+- **Parametros:** `x`: columna (0 a 99), `y`: fila (0 a 99).
+- **Retorno:** diccionario con claves `estado`, `humedad`, `alimento`, `tick_quemada` y `en_llamas`.
+- **Errores:** `ErrorSimulador` si las coordenadas estan fuera de limites.
+
+### Simulacion.obtenerInstantanea
+- **Firma:** `obtenerInstantanea() -> Instantanea`
+- **Descripcion:** genera una instantanea inmutable con arreglos de solo lectura para que la interfaz dibuje el mapa y la barra de estado.
+- **Parametros:** ninguno.
+- **Retorno:** objeto inmutable `Instantanea`.
+
+---
+
 # Grupo Vida -> Grupo Ecosistema
 
+Vida define los contratos que necesita del mapa (`MapaPuerto`) para desacoplar su logica de criaturas de la matriz celular, y entrega a Ecosistema la actualizacion del ciclo de vida de la poblacion.
+
+### MapaPuerto.alto
+- **Firma:** `alto: int`
+- **Descripcion:** cantidad de filas del mapa.
+
+### MapaPuerto.ancho
+- **Firma:** `ancho: int`
+- **Descripcion:** cantidad de columnas del mapa.
+
+### MapaPuerto.biomasa_en
+- **Firma:** `biomasa_en(x: int, y: int) -> float`
+- **Descripcion:** cantidad de alimento o biomasa vegetal disponible en la casilla (en unidades u).
+- **Parametros:** `x`: columna, `y`: fila.
+- **Retorno:** biomasa disponible (0.0 si no hay alimento o es agua/tierra).
+
+### MapaPuerto.buscar_en_radio
+- **Firma:** `buscar_en_radio(x: int, y: int, radio: int, tipo: str) -> list[tuple[int, int]]`
+- **Descripcion:** devuelve las coordenadas dentro del radio Chebyshev que cumplen el tipo especificado (`"comida"` para biomasa > 0, `"fuego"` para casillas en llamas).
+- **Parametros:** `x`, `y`: centro de busqueda; `radio`: distancia Chebyshev; `tipo`: `"comida"` o `"fuego"`.
+- **Retorno:** lista de tuplas `(x, y)` ordenadas de manera determinista.
+
+### MapaPuerto.consumir_biomasa
+- **Firma:** `consumir_biomasa(x: int, y: int) -> float`
+- **Descripcion:** consume el alimento presente en la casilla y retorna cuantas unidades habia.
+- **Parametros:** `x`: columna, `y`: fila.
+- **Retorno:** unidades consumidas (float).
+
+### MapaPuerto.en_limites
+- **Firma:** `en_limites(x: int, y: int) -> bool`
+- **Descripcion:** comprueba si la coordenada se encuentra dentro de los limites del mapa.
+- **Parametros:** `x`: columna, `y`: fila.
+- **Retorno:** `True` si es valida, `False` en caso contrario.
+
+### MapaPuerto.es_transitable
+- **Firma:** `es_transitable(x: int, y: int) -> bool`
+- **Descripcion:** comprueba si una criatura puede ocupar la casilla (tierra, pasto, arbol y quemada son transitables; agua es intransitable).
+- **Parametros:** `x`: columna, `y`: fila.
+- **Retorno:** `True` si se puede pisar, `False` si es obstaculo.
+
+### MapaPuerto.hay_fuego
+- **Firma:** `hay_fuego(x: int, y: int) -> bool`
+- **Descripcion:** indica si la casilla esta ardiendo en llamas en el tick actual.
+- **Parametros:** `x`: columna, `y`: fila.
+- **Retorno:** `True` si tiene fuego activo, `False` si no.
+
+---
+
+### Poblacion.actualizar
+- **Firma:** `actualizar(mapa: MapaPuerto, temperatura: float) -> list[EventoVida]`
+- **Descripcion:** ejecuta los pasos de vida de las criaturas (pasos 6 a 10): percepcion, toma de decisiones, movimiento, alimentacion, depredacion, reproduccion, metabolismo y muertes.
+- **Parametros:** `mapa`: instancia que satisface `MapaPuerto`; `temperatura`: temperatura ambiental en °C.
+- **Retorno:** lista de eventos ocurridos (`EventoVida`).
+
+### Poblacion.serializar
+- **Firma:** `serializar() -> dict`
+- **Descripcion:** convierte el estado completo de especies, criaturas vivas e historial a una estructura reproducible para guardado atomico.
+- **Parametros:** ninguno.
+- **Retorno:** diccionario serializable.
+
+### Poblacion.snapshot
+- **Firma:** `snapshot() -> dict`
+- **Descripcion:** entrega las posiciones y metadatos de las criaturas vivas y especies para ensamblar en `Instantanea`.
+- **Parametros:** ninguno.
+- **Retorno:** diccionario indexado por especie con conteos y coordenadas.
+
+---
+
 # Grupo Vida -> Grupo App
+
+Vida provee a la aplicacion la informacion detallada de especies para dialogos y graficas, y la inspeccion de criaturas individuales para el visor.
+
+### GestorHistorial.obtenerSerie
+- **Firma:** `obtenerSerie(nombre_especie: str, metrica: str) -> list[tuple[int, float]]`
+- **Descripcion:** devuelve la serie temporal de pares `(tick, valor)` para graficar en `DetalleEspecieDialog` con `pyqtgraph`.
+- **Parametros:** `nombre_especie`: identificador de la especie; `metrica`: `"poblacion"`, `"tamano"`, `"velocidad"` o `"vision"`.
+- **Retorno:** lista de tuplas `(tick, valor)`.
+- **Errores:** `KeyError` si la especie o metrica no existe.
+
+### GestorHistorial.reducirSiExcede
+- **Firma:** `reducirSiExcede(max_puntos: int) -> None`
+- **Descripcion:** reduce a la mitad la resolucion de las muestras antiguas cuando la serie sobrepasa el limite de almacenamiento.
+- **Parametros:** `max_puntos`: umbral maximo de muestras (ej. 5000).
+- **Retorno:** nada.
+
+### Poblacion.inspeccionarCriatura
+- **Firma:** `inspeccionarCriatura(criatura_id: int) -> dict`
+- **Descripcion:** extrae los atributos vitales y geneticos de una criatura para mostrarlos en el inspector lateral de la ventana de simulacion.
+- **Parametros:** `criatura_id`: identificador unico de la criatura.
+- **Retorno:** diccionario con claves `id`, `especie`, `posicion`, `velocidad`, `fuerza`, `vision`, `tamano`, `saciedad`, `hidratacion`, `espera_reproduccion`, `edad` y `estado_automata`.
+- **Errores:** `ErrorSimulador` si la criatura no existe o esta muerta.
 
 # Grupo App -> Grupo Ecosistema
 
