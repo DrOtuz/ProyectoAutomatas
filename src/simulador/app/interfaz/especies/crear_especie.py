@@ -212,6 +212,16 @@ class CrearEspecieWidget(QWidget):
         layout_cuerpo.addLayout(col_color, 2)
         layout_principal.addLayout(layout_cuerpo)
 
+    def fijarColor(self, indice: int) -> None:
+        """Muestra el color que recibira la proxima especie (el que elige el motor)."""
+        self._color_idx = indice % len(PALETA_ESPECIES)
+        color_hex = PALETA_ESPECIES[self._color_idx]
+        self.circulo_color.setStyleSheet(
+            f"background-color: {color_hex}; border-radius: 25px; border: 2px solid white;"
+        )
+        self.lbl_hex.setText(color_hex)
+        self.lbl_color_desc.setText(f"Color {self._color_idx + 1} de 12 de la paleta. Se asigna solo.")
+
     def _crearSpinGen(
         self, etiqueta: str, layout: QVBoxLayout, rango: tuple[float, float], paso: float
     ) -> QDoubleSpinBox:

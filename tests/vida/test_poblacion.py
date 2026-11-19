@@ -637,3 +637,22 @@ def test_snapshot_no_depende_del_orden_interno_de_las_criaturas():
     cargada = Poblacion.desde_dict(json.loads(json.dumps(pob.a_dict())), CFG)
     # mismas criaturas, pero los conjuntos internos se armaron en otro orden:
     assert cargada.snapshot() == pob.snapshot()  # igualdad exacta, sin tolerancia
+
+
+def test_agregar_individuos_promedio_actual_u_original():
+    mapa = mapa_con(30, 30)
+    pob = nueva()
+    pob.crear_especie("a", H, 10, mapa)
+    for c in pob.criaturas_vivas():
+        c.stats = Estadisticas(c.stats.tamano, 4.0, c.stats.vision)
+    plantilla_v = pob.especies["a"].plantilla.velocidad
+    antes = {c.id for c in pob.criaturas_vivas()}
+
+    pob.agregar_individuos("a", 20, mapa, promedio_actual=True)
+    nuevas = [c for c in pob.criaturas_vivas() if c.id not in antes]
+    assert abs(sum(c.stats.velocidad for c in nuevas) / len(nuevas) - 4.0) < 0.5
+
+    antes = {c.id for c in pob.criaturas_vivas()}
+    pob.agregar_individuos("a", 20, mapa)  # por defecto: plantilla original
+    nuevas = [c for c in pob.criaturas_vivas() if c.id not in antes]
+    assert abs(sum(c.stats.velocidad for c in nuevas) / len(nuevas) - plantilla_v) < 0.5

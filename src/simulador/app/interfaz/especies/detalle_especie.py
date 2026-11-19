@@ -5,6 +5,7 @@ from __future__ import annotations
 import pyqtgraph as pg
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFrame,
     QHBoxLayout,
     QInputDialog,
@@ -24,7 +25,7 @@ class DetalleEspecieWidget(QWidget):
     """Panel de detalle, control poblacional y graficas de dinamica temporal (RF-46)."""
 
     volverLista = Signal()
-    agregarCriaturasSolicitado = Signal(int, int)  # especie_id, cantidad
+    agregarCriaturasSolicitado = Signal(int, int, bool)  # especie_id, cantidad, promedio_actual
     eliminarCriaturasSolicitado = Signal(int, int)  # especie_id, cantidad
     extinguirEspecieSolicitado = Signal(int)  # especie_id
     eliminarEspecieSolicitado = Signal(int)  # especie_id
@@ -112,6 +113,14 @@ class DetalleEspecieWidget(QWidget):
         )
         self.btn_agregar.clicked.connect(self._onAgregar)
 
+        self.chk_promedio = QCheckBox("Con los promedios actuales")
+        self.chk_promedio.setChecked(True)
+        self.chk_promedio.setToolTip(
+            "Marcado: las nuevas nacen con el tamaño, velocidad y visión promedio de la especie ahora.\n"
+            "Desmarcado: nacen con los valores con los que se creó la especie."
+        )
+        self.chk_promedio.setStyleSheet("color: #1E1E1E;")
+
         l_input_ag.addWidget(self.spin_cantidad)
         l_input_ag.addWidget(self.btn_agregar)
 
@@ -121,6 +130,7 @@ class DetalleEspecieWidget(QWidget):
 
         l_ag.addWidget(lbl_ag_titulo)
         l_ag.addLayout(l_input_ag)
+        l_ag.addWidget(self.chk_promedio)
         l_ag.addWidget(lbl_nota_ag)
         col_izq.addWidget(tarjeta_agregar)
 
@@ -273,7 +283,9 @@ class DetalleEspecieWidget(QWidget):
 
     def _onAgregar(self) -> None:
         if self._especie:
-            self.agregarCriaturasSolicitado.emit(self._especie.especie_id, self.spin_cantidad.value())
+            self.agregarCriaturasSolicitado.emit(
+                self._especie.especie_id, self.spin_cantidad.value(), self.chk_promedio.isChecked()
+            )
 
     def _onEliminarCriaturas(self) -> None:
         if not self._especie:

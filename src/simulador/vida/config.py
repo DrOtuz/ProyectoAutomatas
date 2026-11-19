@@ -63,8 +63,8 @@ class ConfigVida:
 
     # --- metabolismo: gasto = f_T * S^-EXPONENTE_KLEIBER * (A + C*R + K*V^2*m)
     A: float = 0.30
-    C: float = 0.05
-    K: float = 0.15
+    C: float = 0.10
+    K: float = 0.30
     EXPONENTE_KLEIBER: float = 0.25
     T_OPT: float = 22.0  # temperatura ideal (grados C)
     ALFA: float = 0.15  # fuerza del efecto de la temperatura
@@ -76,7 +76,7 @@ class ConfigVida:
     UNIDADES_POR_TAMANO: float = 100.0  # una criatura de tamano S pesa 100*S u
 
     # --- herencia ----------------------------------------------------------
-    SIGMA: float = 0.05  # desviacion de la mutacion (proporcional)
+    SIGMA: float = 0.10  # desviacion de la mutacion (proporcional)
     VARIACION_INICIAL: float = 0.10  # variacion individual al crear una especie
     PLANTILLAS: dict = field(default_factory=_plantillas_defecto)
 
