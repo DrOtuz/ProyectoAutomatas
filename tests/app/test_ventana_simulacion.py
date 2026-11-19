@@ -195,3 +195,33 @@ def test_actualizar_ejecuta_sin_bloquear_hilo(ventana):
     # Llama a actualizar directamente verificando que no lanza excepciones
     ventana.actualizar()
     assert ventana.visor is not None
+
+
+def test_incendio_espera_clic_en_el_mapa(ventana):
+    enviados = []
+    ventana._ejecutor.enviar = enviados.append  # type: ignore[method-assign]
+
+    ventana.panel_eventos.btn_incendio.click()
+    assert ventana._eligiendo_foco
+    assert not ventana.panel_eventos.lbl_foco.isHidden()
+    assert enviados == []  # todavia no se provoca nada
+
+    ventana._alSeleccionarCasilla(12, 34)
+    assert not ventana._eligiendo_foco
+    assert len(enviados) == 1
+    orden = enviados[0]
+    assert (orden.tipo, orden.foco_x, orden.foco_y) == (TipoEvento.incendio, 12, 34)
+
+
+def test_incendio_se_puede_cancelar_sin_provocarlo(ventana):
+    enviados = []
+    ventana._ejecutor.enviar = enviados.append  # type: ignore[method-assign]
+
+    ventana.panel_eventos.btn_incendio.click()
+    ventana.panel_eventos.btn_incendio.click()  # segundo clic en el boton: cancela
+    assert not ventana._eligiendo_foco
+
+    ventana.panel_eventos.btn_incendio.click()
+    ventana._fijarEleccionFoco(False)  # lo mismo que pulsar Esc
+    ventana._alSeleccionarCasilla(5, 5)  # ya es una seleccion normal
+    assert not any(getattr(o, "tipo", None) == TipoEvento.incendio for o in enviados)

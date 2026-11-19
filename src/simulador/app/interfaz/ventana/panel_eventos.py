@@ -25,6 +25,7 @@ class PanelEventos(QWidget):
 
     provocarEvento = Signal(object)
     cancelarEvento = Signal(object)
+    incendioSolicitado = Signal()  # el usuario quiere elegir en el mapa donde empieza
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -72,16 +73,40 @@ class PanelEventos(QWidget):
                 "}"
                 "QPushButton:hover { background-color: #F5F3EF; }"
             )
-            btn.clicked.connect(lambda _, t=tipo: self.provocarEvento.emit(t))
+            if tipo == TipoEvento.incendio:
+                btn.clicked.connect(lambda _=False: self.incendioSolicitado.emit())
+            else:
+                btn.clicked.connect(lambda _, t=tipo: self.provocarEvento.emit(t))
             layout_botones.addWidget(btn)
 
         layout.addLayout(layout_botones)
+
+        self.lbl_foco = QLabel("Haz clic en el mapa donde quieres que empiece el incendio. Esc para cancelar.")
+        self.lbl_foco.setWordWrap(True)
+        self.lbl_foco.setStyleSheet("font-size: 12px; color: #B71C1C; font-weight: bold;")
+        self.lbl_foco.hide()
+        layout.addWidget(self.lbl_foco)
 
         self.lbl_error = QLabel()
         self.lbl_error.setWordWrap(True)
         self.lbl_error.setStyleSheet("font-size: 12px; color: #D32F2F; font-weight: bold;")
         self.lbl_error.hide()
         layout.addWidget(self.lbl_error)
+
+    def marcarEligiendoFoco(self, activo: bool) -> None:
+        """Resalta el boton de incendio y muestra la instruccion mientras se espera el clic."""
+        self.lbl_foco.setVisible(activo)
+        self.btn_incendio.setText("🔥 Elige la casilla…" if activo else "🔥 Incendio")
+        self.btn_incendio.setStyleSheet(
+            "QPushButton { background-color: #FFCDD2; border: 1px solid #B71C1C; border-radius: 6px;"
+            "  padding: 6px 10px; font-size: 12px; font-weight: 600; color: #B71C1C; }"
+            if activo
+            else "QPushButton {"
+            "  background-color: white; border: 1px solid #D0C9BE; border-radius: 6px;"
+            "  padding: 6px 10px; font-size: 12px; font-weight: 500; color: #1E1E1E;"
+            "}"
+            "QPushButton:hover { background-color: #F5F3EF; }"
+        )
 
     def mostrarError(self, texto: str) -> None:
         """Muestra el motivo por el que el motor rechazo una orden (se borra solo al limpiar)."""

@@ -23,7 +23,12 @@ from simulador.app.interfaz.ventana.panel_eventos import PanelEventos
 from simulador.app.interfaz.ventana.visor_mapa import VisorMapa
 from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento, validarNombre
-from simulador.contratos.comandos import CancelarEvento, FijarNutrientes, ProvocarEvento
+from simulador.contratos.comandos import (
+    CancelarEvento,
+    FijarNutrientes,
+    ProvocarEvento,
+    TipoEvento,
+)
 from simulador.contratos.errores import ErrorSimulador
 
 
@@ -45,6 +50,7 @@ class VentanaSimulacion(QMainWindow):
     ) -> None:
         super().__init__(parent)
         self._ejecutor = ejecutor
+        self._eligiendo_foco = False
         self._nombre = nombre
         self._almacenamiento = almacenamiento
         self._simulacion_id = simulacion_id
@@ -209,6 +215,7 @@ class VentanaSimulacion(QMainWindow):
         self.panel_eventos.provocarEvento.connect(
             lambda tipo: self._ejecutor.enviar(ProvocarEvento(tipo))
         )
+        self.panel_eventos.incendioSolicitado.connect(self._alternarEleccionFoco)
         self.panel_eventos.cancelarEvento.connect(
             lambda tipo: self._ejecutor.enviar(CancelarEvento(tipo))
         )
@@ -256,7 +263,26 @@ class VentanaSimulacion(QMainWindow):
         self._ejecutor.enviar(FijarNutrientes(valor))
         self.lbl_nut.setText(f"Nutrientes: {valor}")
 
+    def _alternarEleccionFoco(self) -> None:
+        """El boton de incendio entra (o sale) del modo en que el siguiente clic es el foco."""
+        self._fijarEleccionFoco(not self._eligiendo_foco)
+
+    def _fijarEleccionFoco(self, activo: bool) -> None:
+        self._eligiendo_foco = activo
+        self.panel_eventos.marcarEligiendoFoco(activo)
+        self.visor.setCursor(Qt.CursorShape.CrossCursor if activo else Qt.CursorShape.ArrowCursor)
+
+    def keyPressEvent(self, evento) -> None:
+        if evento.key() == Qt.Key.Key_Escape and self._eligiendo_foco:
+            self._fijarEleccionFoco(False)
+            return
+        super().keyPressEvent(evento)
+
     def _alSeleccionarCasilla(self, x: int, y: int) -> None:
+        if self._eligiendo_foco:
+            self._fijarEleccionFoco(False)
+            self._ejecutor.enviar(ProvocarEvento(TipoEvento.incendio, foco_x=x, foco_y=y))
+            return
         instantanea = self._ejecutor.obtenerInstantanea()
         criaturas = instantanea.criaturas
         # Buscar criatura en esa coordenada
