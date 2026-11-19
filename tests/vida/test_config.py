@@ -14,9 +14,9 @@ def test_valores_por_defecto_son_los_del_documento():
     assert cfg.umbral_salida_pareja == 50
     assert cfg.COSTO_REPRODUCCION == 25
     assert cfg.ENERGIA_CRIA == 30
-    assert (cfg.A, cfg.C, cfg.K) == (0.30, 0.05, 0.15)
+    assert (cfg.A, cfg.C, cfg.K) == (0.30, 0.10, 0.30)
     assert (cfg.T_OPT, cfg.ALFA) == (22, 0.15)
-    assert cfg.SIGMA == 0.05
+    assert cfg.SIGMA == 0.10
     assert cfg.MAX_CRIATURAS == 500
     assert cfg.COOLDOWN_REPRODUCCION == 60
     assert cfg.MAX_POR_CASILLA == 1
@@ -41,7 +41,7 @@ def test_es_inmutable_y_con_crea_copias():
     with pytest.raises(dataclasses.FrozenInstanceError):
         cfg.SIGMA = 0.5  # type: ignore[misc]
     otra = cfg.con(SIGMA=0.08)
-    assert otra.SIGMA == 0.08 and cfg.SIGMA == 0.05
+    assert otra.SIGMA == 0.08 and cfg.SIGMA == 0.10
 
 
 def test_los_defaults_no_se_comparten_entre_instancias():

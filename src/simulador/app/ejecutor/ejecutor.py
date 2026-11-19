@@ -41,6 +41,7 @@ class Ejecutor:
         self._cerrojo = threading.Lock()
         self._instantanea: Instantanea = motor.obtenerInstantanea()
         self._ultimo_tick_guardado: int = self._instantanea.tick
+        self._numero_guardados = 0
         self._solicitar_guardado = False
         self._avisos: list[Aviso] = []
         self._errores: list[ErrorSimulador] = []
@@ -78,6 +79,12 @@ class Ejecutor:
     def ultimo_tick_guardado(self) -> int:
         with self._cerrojo:
             return self._ultimo_tick_guardado
+
+    @property
+    def numero_guardados(self) -> int:
+        """Cuantos guardados se completaron en esta sesion (la interfaz lo usa para avisar)."""
+        with self._cerrojo:
+            return self._numero_guardados
 
     def fijarDestinoGuardado(
         self, almacenamiento: Almacenamiento | None, simulacion_id: int | None
@@ -181,6 +188,7 @@ class Ejecutor:
             )
             with self._cerrojo:
                 self._ultimo_tick_guardado = tick
+                self._numero_guardados += 1
         except ErrorSimulador as error:
             with self._cerrojo:
                 self._errores.append(error)

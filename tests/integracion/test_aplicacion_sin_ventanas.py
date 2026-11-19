@@ -84,3 +84,20 @@ def test_agregar_criaturas_con_el_ejecutor_en_pausa_se_ve_sin_reanudar():
     e.enviar(AgregarCriaturas(99, 1))  # especie inexistente: el error llega a la interfaz
     assert esperar(lambda: len(e.tomarErrores()) == 1)
     e.detener()
+
+
+def test_cada_guardado_manual_suma_al_contador_y_se_puede_cargar(tmp_path):
+    almacenamiento = AlmacenamientoSqlite(tmp_path / "b.db")
+    try:
+        motor, resumen = crearYGuardar(almacenamiento, "G", semilla=6, velocidad=30)
+        e = Ejecutor(motor, velocidad=30, almacenamiento=almacenamiento, simulacion_id=resumen.simulacion_id)
+        e.iniciar()
+        e.enviar(CrearEspecie("Conejos", 12))
+        assert esperar(lambda: e.obtenerInstantanea().total_criaturas == 12)
+        antes = e.numero_guardados
+        e.solicitarGuardado()  # lo que hace el boton, con la simulacion en pausa
+        assert esperar(lambda: e.numero_guardados == antes + 1)
+        e.detener()
+        assert abrirMotor(almacenamiento, resumen.simulacion_id).obtenerInstantanea().total_criaturas == 12
+    finally:
+        almacenamiento.cerrar()
