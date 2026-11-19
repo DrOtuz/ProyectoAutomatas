@@ -15,7 +15,7 @@ class ConfiguracionApp:
     # Velocidad del ejecutor (RF-15)
     velocidad_minima: int = campo(1, minimo=1, maximo=1000)
     velocidad_inicial: int = campo(10, minimo=1, maximo=1000)
-    velocidad_maxima: int = campo(60, minimo=1, maximo=1000)
+    velocidad_maxima: int = campo(30, minimo=1, maximo=1000)
     # Mapa (RF-13, RF-20, D-40)
     tamano_casilla_px: int = campo(6, minimo=1, maximo=64)
     zoom_minimo: int = campo(1, minimo=1, maximo=64)

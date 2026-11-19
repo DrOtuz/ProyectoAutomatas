@@ -149,16 +149,23 @@ class AutomataCriatura:
             factor = c.eficiencia_planta() / c.stats.tamano  # ganancia % por unidad u
             maximo = self.cfg.MAX_POR_CASILLA
             px, py = c.pos
+            # este bucle corre para cada criatura en cada tick: se usan variables locales
+            # y las casillas en llamas ya vistas arriba, en vez de preguntarle al mapa
+            en_llamas = set(p.fuegos)
+            biomasa_en = mapa.biomasa_en
+            ocupacion = ctx.ocupacion
+            plantas = p.plantas
             for pos in mapa.buscar_en_radio(x, y, radio, TIPO_COMIDA):
                 cx, cy = pos
-                biomasa = mapa.biomasa_en(cx, cy)
-                if biomasa <= 0 or mapa.hay_fuego(cx, cy):
+                biomasa = biomasa_en(cx, cy)
+                if biomasa <= 0 or pos in en_llamas:
                     continue
                 # no se puede entrar a una casilla sin cupo
-                if ctx.ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
+                if ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
                     continue
-                d = max(abs(cx - px), abs(cy - py))
-                p.plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, factor * biomasa, d))
+                dx, dy = cx - px, cy - py
+                d = max(dx if dx >= 0 else -dx, dy if dy >= 0 else -dy)
+                plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, factor * biomasa, d))
         return p
 
     @staticmethod

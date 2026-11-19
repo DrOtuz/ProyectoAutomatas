@@ -373,12 +373,27 @@ def test_la_cria_hereda_de_los_padres_con_mutacion():
 
 
 def test_reproduccion_repetida_un_padre_lleno_se_reproduce_hasta_bajar_de_50():
-    pob, mapa, _uno, _dos = preparar_pareja(energia=100.0, ancho=20, alto=20)
+    sin_espera = CFG.con(COOLDOWN_REPRODUCCION=0)
+    pob, mapa, _uno, _dos = preparar_pareja(energia=100.0, ancho=20, alto=20, cfg=sin_espera)
     eventos = registro(pob)
     for _ in range(4):
         pob.actualizar(mapa, 22.0)
     assert sum(e.tipo == NACIMIENTO for e in eventos) == 2  # 100 -> 75 -> 50 -> deja de buscar
     assert pob.total() == 4
+
+
+def test_los_padres_no_se_reproducen_otra_vez_hasta_cumplir_el_cooldown():
+    pob, mapa, uno, dos = preparar_pareja(energia=100.0, ancho=20, alto=20)
+    eventos = registro(pob)
+    pob.actualizar(mapa, 22.0)
+    assert sum(e.tipo == NACIMIENTO for e in eventos) == 1
+    assert uno.espera_reproduccion == dos.espera_reproduccion == CFG.COOLDOWN_REPRODUCCION
+    for _ in range(CFG.COOLDOWN_REPRODUCCION - 1):
+        uno.energia = dos.energia = 100.0  # con energia de sobra, igual esperan
+        pob.actualizar(mapa, 22.0)
+    assert sum(e.tipo == NACIMIENTO for e in eventos) == 1  # nadie nuevo en 59 ticks
+    pob.actualizar(mapa, 22.0)  # el tick 60: el cooldown termino (se ven de nuevo cuando se encuentran)
+    assert uno.espera_reproduccion == dos.espera_reproduccion == 0
 
 
 def test_no_hay_reproduccion_entre_especies_distintas():

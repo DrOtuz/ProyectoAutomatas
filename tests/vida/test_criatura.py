@@ -371,7 +371,7 @@ def test_pagar_reproduccion_resta_25():
 
 
 def test_un_padre_lleno_puede_reproducirse_varias_veces_hasta_bajar_de_50():
-    c = herbivoro(energia=100.0)
+    c = herbivoro(energia=100.0, cfg=CFG.con(COOLDOWN_REPRODUCCION=0))  # sin espera entre crias
     c.actualizar_intencion()
     veces = 0
     while c.intencion == INTENCION_PAREJA and c.puede_pagar_reproduccion():
@@ -523,3 +523,25 @@ def test_al_morir_tambien_avisa_si_muere_de_hambre_o_de_vejez_o_comida():
     viejo.envejecer()
     carnivoro(especie="lobo").comer_presa(presa)
     assert avisos == [CausaMuerte.HAMBRE, CausaMuerte.VEJEZ, CausaMuerte.DEPREDACION]
+
+
+def test_tras_reproducirse_espera_el_cooldown_antes_de_buscar_pareja():
+    c = herbivoro(energia=100.0)
+    assert c.quiere_pareja() and c.espera_reproduccion == 0
+    c.pagar_reproduccion()
+    assert c.espera_reproduccion == CFG.COOLDOWN_REPRODUCCION == 60
+    c.energia = 100.0  # aunque tenga energia de sobra
+    assert not c.quiere_pareja() and c.actualizar_intencion() == INTENCION_ALIMENTO
+    for _ in range(59):
+        c.iniciar_tick()
+    assert c.espera_reproduccion == 1 and not c.quiere_pareja()
+    c.iniciar_tick()
+    assert c.espera_reproduccion == 0 and c.quiere_pareja()
+
+
+def test_el_cooldown_viaja_en_el_guardado():
+    c = herbivoro(energia=100.0)
+    c.pagar_reproduccion()
+    c.iniciar_tick()
+    copia = Criatura.desde_dict(json.loads(json.dumps(c.a_dict())), CFG)
+    assert copia.espera_reproduccion == 59

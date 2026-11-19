@@ -69,14 +69,14 @@ def test_crear_especie_formulario_emite_valores(qtbot):
     assert PALETA_ESPECIES[6] in widget.lbl_hex.text()
 
     eventos = []
-    widget.crearEspecieSolicitado.connect(lambda n, c, g: eventos.append((n, c, g)))
+    widget.crearEspecieSolicitado.connect(lambda n, c, d, g: eventos.append((n, c, d, g)))
 
     widget.input_nombre.setText("Venados")
     widget.spin_cantidad.setValue(25)
     widget.btn_crear.click()
 
     assert len(eventos) == 1
-    assert eventos[0] == ("Venados", 25, None)
+    assert eventos[0] == ("Venados", 25, "herbivoro", None)
 
 
 @pytest.mark.requisito("RF-37")
@@ -86,17 +86,20 @@ def test_crear_especie_modo_avanzado_incluye_genes(qtbot):
     widget.show()
 
     eventos = []
-    widget.crearEspecieSolicitado.connect(lambda n, c, g: eventos.append((n, c, g)))
+    widget.crearEspecieSolicitado.connect(lambda n, c, d, g: eventos.append((n, c, d, g)))
 
     widget.input_nombre.setText("Zorros")
     widget.chk_modo_avanzado.setChecked(True)
-    widget.spin_vel.setValue(7.5)
-    widget.spin_fza.setValue(6.0)
+    widget.combo_dieta.setCurrentIndex(1)  # carnivoro
+    widget.spin_tam.setValue(2.0)
+    widget.spin_vel.setValue(2.5)
+    widget.spin_vis.setValue(8.0)
     widget.btn_crear.click()
 
     assert len(eventos) == 1
     assert eventos[0][0] == "Zorros"
-    assert eventos[0][2] == (7.5, 6.0, 5.0, 5.0)
+    assert eventos[0][2] == "carnivoro"
+    assert eventos[0][3] == (2.0, 2.5, 8.0)
 
 
 @pytest.mark.requisito("RF-42")

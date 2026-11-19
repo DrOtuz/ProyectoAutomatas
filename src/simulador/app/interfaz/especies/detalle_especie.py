@@ -36,7 +36,7 @@ class DetalleEspecieWidget(QWidget):
         self._historial_poblacion: list[int] = []
         self._historial_genes: dict[str, list[float]] = {
             "velocidad": [],
-            "fuerza": [],
+            "energia": [],
             "vision": [],
             "tamano": [],
         }
@@ -97,7 +97,7 @@ class DetalleEspecieWidget(QWidget):
 
         l_input_ag = QHBoxLayout()
         self.spin_cantidad = QSpinBox()
-        self.spin_cantidad.setRange(1, 1000)
+        self.spin_cantidad.setRange(1, 500)
         self.spin_cantidad.setValue(10)
         self.spin_cantidad.setStyleSheet("padding: 6px; font-size: 13px; border: 1px solid #D0C9BE;")
 
@@ -196,14 +196,14 @@ class DetalleEspecieWidget(QWidget):
         col_der.addWidget(self.plot_poblacion)
 
         # 2. Gráfica de Genes
-        lbl_graf_genes = QLabel("Genes promedio (Velocidad, Fuerza, Visión, Tamaño)")
+        lbl_graf_genes = QLabel("Promedios de la especie (Tamaño, Velocidad, Visión; Energía ÷10)")
         lbl_graf_genes.setStyleSheet("font-weight: bold; font-size: 13px; color: #1E1E1E;")
         self.plot_genes = pg.PlotWidget()
         self.plot_genes.setBackground("#FBF9F5")
         self.plot_genes.showGrid(x=True, y=True, alpha=0.3)
         self.plot_genes.addLegend()
         self.curva_vel = self.plot_genes.plot(pen=pg.mkPen("#0606F9", width=2), name="Velocidad")
-        self.curva_fza = self.plot_genes.plot(pen=pg.mkPen("#06D0F9", width=2, style=Qt.PenStyle.DashLine), name="Fuerza")
+        self.curva_ene = self.plot_genes.plot(pen=pg.mkPen("#06D0F9", width=2, style=Qt.PenStyle.DashLine), name="Energía ÷10")
         self.curva_vis = self.plot_genes.plot(pen=pg.mkPen("#F9062F", width=2, style=Qt.PenStyle.DotLine), name="Visión")
         self.curva_tam = self.plot_genes.plot(pen=pg.mkPen("#1B5E20", width=2, style=Qt.PenStyle.DashDotLine), name="Tamaño")
         col_der.addWidget(lbl_graf_genes)
@@ -238,7 +238,7 @@ class DetalleEspecieWidget(QWidget):
         tick: int,
         poblacion: int,
         velocidad: float = 5.0,
-        fuerza: float = 5.0,
+        energia: float = 5.0,
         vision: float = 5.0,
         tamano: float = 5.0,
     ) -> None:
@@ -246,15 +246,30 @@ class DetalleEspecieWidget(QWidget):
         self._historial_ticks.append(tick)
         self._historial_poblacion.append(poblacion)
         self._historial_genes["velocidad"].append(velocidad)
-        self._historial_genes["fuerza"].append(fuerza)
+        self._historial_genes["energia"].append(energia)
         self._historial_genes["vision"].append(vision)
         self._historial_genes["tamano"].append(tamano)
 
         self.curva_poblacion.setData(self._historial_ticks, self._historial_poblacion)
         self.curva_vel.setData(self._historial_ticks, self._historial_genes["velocidad"])
-        self.curva_fza.setData(self._historial_ticks, self._historial_genes["fuerza"])
+        self.curva_ene.setData(self._historial_ticks, self._historial_genes["energia"])
         self.curva_vis.setData(self._historial_ticks, self._historial_genes["vision"])
         self.curva_tam.setData(self._historial_ticks, self._historial_genes["tamano"])
+
+    def cargarSeries(self, ticks: list[int], valores: dict[str, list]) -> None:
+        """Reemplaza las curvas por las series completas de la especie (los huecos de una
+        especie extinta llegan como None y se dibujan cortados)."""
+        import numpy as np
+
+        def arreglo(lista: list, factor: float = 1.0) -> np.ndarray:
+            return np.array([np.nan if v is None else v * factor for v in lista], dtype=float)
+
+        x = np.array(ticks, dtype=float)
+        self.curva_poblacion.setData(x, arreglo(valores["poblacion"]), connect="finite")
+        self.curva_tam.setData(x, arreglo(valores["tamano"]), connect="finite")
+        self.curva_vel.setData(x, arreglo(valores["velocidad"]), connect="finite")
+        self.curva_vis.setData(x, arreglo(valores["vision"]), connect="finite")
+        self.curva_ene.setData(x, arreglo(valores["energia"], 0.1), connect="finite")
 
     def _onAgregar(self) -> None:
         if self._especie:

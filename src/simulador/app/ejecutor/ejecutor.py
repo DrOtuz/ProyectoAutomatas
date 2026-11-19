@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import queue
 import threading
 import time
+from collections.abc import Callable
 
 from simulador.configuracion.app import ConfiguracionApp
 from simulador.contratos.almacenamiento import Almacenamiento
@@ -48,6 +50,7 @@ class Ejecutor:
         self._pausa.set()  # arranca en pausa
         self._detener = threading.Event()
         self._hilo: threading.Thread | None = None
+        self._escuchas_tick: list[Callable[[Instantanea], None]] = []
 
     @property
     def activo(self) -> bool:
@@ -107,6 +110,12 @@ class Ejecutor:
         self._hilo = threading.Thread(target=self._bucle, name="ejecutor", daemon=True)
         self._hilo.start()
 
+    def alAvanzar(self, escucha: Callable[[Instantanea], None]) -> None:
+        """Registra una funcion que se llama en el hilo del motor con la instantanea de cada
+        tick (para llevar series completas sin perder ticks). Debe ser rapida y segura entre
+        hilos; una excepcion suya se ignora para no detener la simulacion."""
+        self._escuchas_tick.append(escucha)
+
     def obtenerInstantanea(self) -> Instantanea:
         with self._cerrojo:
             return self._instantanea
@@ -135,16 +144,22 @@ class Ejecutor:
             raise ValueError(f"La velocidad debe estar entre {minima} y {maxima}")
 
     def _aplicarPendientes(self) -> None:
+        aplicados = False
         while True:
             try:
                 comando = self._comandos.get_nowait()
             except queue.Empty:
-                return
+                break
             try:
                 self._motor.aplicar(comando)
+                aplicados = True
             except ErrorSimulador as error:
                 with self._cerrojo:
                     self._errores.append(error)
+        if aplicados:  # algunas ordenes se ven de inmediato: tambien con el motor en pausa
+            instantanea = self._motor.obtenerInstantanea()
+            with self._cerrojo:
+                self._instantanea = instantanea
 
     def _guardar(self) -> None:
         with self._cerrojo:
@@ -187,6 +202,9 @@ class Ejecutor:
                 with self._cerrojo:
                     self._instantanea = instantanea
                     self._avisos.extend(avisos)
+                for escucha in self._escuchas_tick:
+                    with contextlib.suppress(Exception):
+                        escucha(instantanea)
 
                 if (
                     self._instantanea.tick - self._ultimo_tick_guardado

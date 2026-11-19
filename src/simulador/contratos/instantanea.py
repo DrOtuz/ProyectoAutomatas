@@ -41,6 +41,12 @@ class InfoEspecie:
     color: int  # indice en la paleta de 12 colores
     poblacion: int
     extinguida: bool
+    # promedios de la especie en este tick (None si esta extinguida o el motor no los da);
+    # los usa el detalle de especie para sus curvas
+    tamano: float | None = None
+    velocidad: float | None = None
+    vision: float | None = None
+    energia: float | None = None
 
 
 @dataclass(frozen=True)

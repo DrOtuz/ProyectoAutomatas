@@ -23,7 +23,12 @@ from simulador.contratos.comandos import (
     TipoEvento,
 )
 from simulador.contratos.errores import ComandoInvalido, ComandoNoSoportado
-from simulador.contratos.instantanea import Estacion, EstadoCasilla, InfoEvento, Instantanea
+from simulador.contratos.instantanea import (
+    Estacion,
+    EstadoCasilla,
+    InfoEvento,
+    Instantanea,
+)
 from simulador.contratos.motor import Aviso, Comando, Motor
 
 

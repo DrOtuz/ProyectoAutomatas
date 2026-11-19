@@ -75,6 +75,7 @@ class Criatura:
         self.se_movio = False  # es la `m` del metabolismo
         self.turno_hecho = False  # para que la pareja no actue dos veces
 
+        self.espera_reproduccion = 0  # ticks que faltan para poder reproducirse otra vez
         self.edad = 0
         self.vida_max = int(vida_max)
         self.viva = True
@@ -122,6 +123,8 @@ class Criatura:
         """
         self.se_movio = False
         self.turno_hecho = False
+        if self.espera_reproduccion > 0:
+            self.espera_reproduccion -= 1
         self.acumulador_mov += self.stats.velocidad
         pasos = int(self.acumulador_mov + _EPS)
         self.acumulador_mov = max(0.0, self.acumulador_mov - pasos)
@@ -259,7 +262,9 @@ class Criatura:
 
         Entre 50 y 70 conserva lo que queria. Evita oscilar entre estados.
         """
-        if self.intencion == INTENCION_ALIMENTO and self.en_umbral_reproduccion():
+        if self.espera_reproduccion > 0:  # recien se reprodujo: solo busca comida
+            self.intencion = INTENCION_ALIMENTO
+        elif self.intencion == INTENCION_ALIMENTO and self.en_umbral_reproduccion():
             self.intencion = INTENCION_PAREJA
         elif self.intencion == INTENCION_PAREJA and self.en_umbral_salida():
             self.intencion = INTENCION_ALIMENTO
@@ -271,6 +276,8 @@ class Criatura:
         La intencion solo se actualiza en el turno de la propia criatura; esto
         permite a otra saber si esta quiere pareja aunque aun no le toque jugar.
         """
+        if self.espera_reproduccion > 0:
+            return False
         if self.intencion == INTENCION_PAREJA:
             return not self.en_umbral_salida()
         return self.en_umbral_reproduccion()
@@ -284,6 +291,7 @@ class Criatura:
         if not self.puede_pagar_reproduccion():
             raise ValueError("energia insuficiente para reproducirse")
         self.energia -= self.cfg.COSTO_REPRODUCCION
+        self.espera_reproduccion = self.cfg.COOLDOWN_REPRODUCCION
 
     # --- muerte -----------------------------------------------------------------------
 
@@ -314,6 +322,7 @@ class Criatura:
             "pasos_tick": self.pasos_tick,
             "se_movio": self.se_movio,
             "turno_hecho": self.turno_hecho,
+            "espera_reproduccion": self.espera_reproduccion,
             "edad": self.edad,
             "vida_max": self.vida_max,
             "viva": self.viva,
@@ -341,6 +350,7 @@ class Criatura:
         c.pasos_tick = int(datos["pasos_tick"])
         c.se_movio = bool(datos["se_movio"])
         c.turno_hecho = bool(datos["turno_hecho"])
+        c.espera_reproduccion = int(datos.get("espera_reproduccion", 0))
         c.edad = int(datos["edad"])
         c.viva = bool(datos["viva"])
         causa = datos["causa_muerte"]

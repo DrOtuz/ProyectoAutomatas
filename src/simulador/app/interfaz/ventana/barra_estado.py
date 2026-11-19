@@ -56,7 +56,7 @@ class BarraEstado(QWidget):
         layout.addStretch()
 
         # 4. Contador de Criaturas y Cupo (RF-41)
-        self.lbl_criaturas = QLabel("Criaturas 0 / 1000")
+        self.lbl_criaturas = QLabel("Criaturas 0 / 500")
         self.lbl_criaturas.setStyleSheet(
             "font-size: 13px; font-weight: bold; color: #1E1E1E; padding: 2px 6px;"
         )
