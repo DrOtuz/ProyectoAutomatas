@@ -60,9 +60,9 @@ def test_boton_pausa_y_reanudar_cambia_estado(ventana, ejecutor):
 
 @pytest.mark.requisito("RF-15")
 def test_deslizador_velocidad_ajusta_ejecutor(ventana, ejecutor):
-    ventana.slider_vel.setValue(45)
-    assert ejecutor.velocidad == 45
-    assert "45 t/s" in ventana.lbl_vel.text()
+    ventana.slider_vel.setValue(25)
+    assert ejecutor.velocidad == 25
+    assert "25 t/s" in ventana.lbl_vel.text()
 
 
 @pytest.mark.requisito("RF-16")

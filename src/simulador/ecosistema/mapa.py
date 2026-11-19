@@ -21,12 +21,12 @@ INFLAMABLES = (PASTO, ARBOL)
 
 class Casilla:
     __slots__ = (
-        "tipo",
+        "alimento",
         "coordenada",
         "humedad",
-        "alimento",
         "tick_inicio_llamas",
         "tick_quemada",
+        "tipo",
         "vegetacion_previa",
     )
 
@@ -146,7 +146,7 @@ class Mapa:
 
     def aEstado(self) -> dict:
         """Estado completo con tipos basicos, por filas (para guardar)."""
-        filas = lambda f: [[f(c) for c in fila] for fila in self._casillas]  # noqa: E731
+        filas = lambda f: [[f(c) for c in fila] for fila in self._casillas]
         return {
             "ancho": self.ancho,
             "alto": self.alto,

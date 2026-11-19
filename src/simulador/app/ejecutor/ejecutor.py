@@ -220,5 +220,5 @@ class Ejecutor:
                     siguiente = time.monotonic()  # no acumular atraso
 
             self._guardar()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - el hilo guarda cualquier fallo del motor
             self._fallo = error
