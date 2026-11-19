@@ -26,6 +26,8 @@ from dataclasses import dataclass, field
 from random import Random
 from typing import Protocol, runtime_checkable
 
+import numpy as np
+
 from .config import ConfigVida
 from .criatura import Criatura
 from .percepcion import distancia, paso_aleatorio, paso_alejando, paso_hacia
@@ -147,26 +149,65 @@ class AutomataCriatura:
 
         if c.puede_comer_planta():
             factor = c.eficiencia_planta() / c.stats.tamano  # ganancia % por unidad u
-            maximo = self.cfg.MAX_POR_CASILLA
-            px, py = c.pos
-            # este bucle corre para cada criatura en cada tick: se usan variables locales
-            # y las casillas en llamas ya vistas arriba, en vez de preguntarle al mapa
-            en_llamas = set(p.fuegos)
-            biomasa_en = mapa.biomasa_en
-            ocupacion = ctx.ocupacion
-            plantas = p.plantas
-            for pos in mapa.buscar_en_radio(x, y, radio, TIPO_COMIDA):
-                cx, cy = pos
-                biomasa = biomasa_en(cx, cy)
-                if biomasa <= 0 or pos in en_llamas:
-                    continue
-                # no se puede entrar a una casilla sin cupo
-                if ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
-                    continue
-                dx, dy = cx - px, cy - py
-                d = max(dx if dx >= 0 else -dx, dy if dy >= 0 else -dy)
-                plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, factor * biomasa, d))
+            if hasattr(mapa, "plantas_en_radio"):
+                self._plantas_rapido(c, mapa, ctx, radio, factor, p)
+            else:
+                self._plantas_lento(c, mapa, ctx, radio, factor, p)
         return p
+
+    def _plantas_lento(
+        self, c: Criatura, mapa: MapaPuerto, ctx: ContextoVida, radio: int, factor: float, p: Percepcion
+    ) -> None:
+        """Version de referencia: todas las plantas visibles, una por una."""
+        x, y = c.pos
+        maximo = self.cfg.MAX_POR_CASILLA
+        px, py = c.pos
+        # este bucle corre para cada criatura en cada tick: se usan variables locales
+        # y las casillas en llamas ya vistas arriba, en vez de preguntarle al mapa
+        en_llamas = set(p.fuegos)
+        biomasa_en = mapa.biomasa_en
+        ocupacion = ctx.ocupacion
+        plantas = p.plantas
+        for pos in mapa.buscar_en_radio(x, y, radio, TIPO_COMIDA):
+            cx, cy = pos
+            biomasa = biomasa_en(cx, cy)
+            if biomasa <= 0 or pos in en_llamas:
+                continue
+            # no se puede entrar a una casilla sin cupo
+            if ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
+                continue
+            dx, dy = cx - px, cy - py
+            d = max(dx if dx >= 0 else -dx, dy if dy >= 0 else -dy)
+            plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, factor * biomasa, d))
+
+    def _plantas_rapido(
+        self, c: Criatura, mapa: MapaPuerto, ctx: ContextoVida, radio: int, factor: float, p: Percepcion
+    ) -> None:
+        """Igual que `_plantas_lento` pero con numpy y devolviendo SOLO la mejor planta.
+
+        Elegir comida toma el maximo de (ganancia/(d+1), ganancia, -d) y, en empate,
+        el primero en orden fila a fila; aqui se ordena igual y se queda la primera
+        casilla con cupo, asi que la decision es identica a la de la version lenta.
+        """
+        px, py = c.pos
+        xs, ys, biomasa = mapa.plantas_en_radio(px, py, radio)
+        if xs.size == 0:
+            return
+        gan = factor * biomasa
+        dist = np.maximum(np.abs(xs - px), np.abs(ys - py))
+        puntaje = gan / (dist + 1)
+        orden = np.lexsort((np.arange(xs.size), dist, -gan, -puntaje))
+        maximo = self.cfg.MAX_POR_CASILLA
+        en_llamas = set(p.fuegos)
+        ocupacion = ctx.ocupacion
+        for i in orden.tolist():
+            pos = (int(xs[i]), int(ys[i]))
+            if pos in en_llamas:
+                continue
+            if ocupacion(pos) - (1 if pos == c.pos else 0) >= maximo:
+                continue
+            p.plantas.append(Objetivo(TipoObjetivo.PLANTA, pos, None, float(gan[i]), int(dist[i])))
+            return
 
     @staticmethod
     def _es_pareja_elegible(c: Criatura, otra: Criatura) -> bool:

@@ -154,6 +154,7 @@ class SimuladorEcosistema(Motor):
 
         for x, y in self.fuego.casillasEnLlamas():
             self.poblacion.eliminar_en(x, y)
+        self._mapa_vida.sincronizar()
         self.poblacion.actualizar(self._mapa_vida, self.ciclo.reloj.temperatura)
         self._avisosDeCupo(tick)
         avisos, self._avisos = self._avisos, []
