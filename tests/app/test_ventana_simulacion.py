@@ -225,3 +225,11 @@ def test_incendio_se_puede_cancelar_sin_provocarlo(ventana):
     ventana._fijarEleccionFoco(False)  # lo mismo que pulsar Esc
     ventana._alSeleccionarCasilla(5, 5)  # ya es una seleccion normal
     assert not any(getattr(o, "tipo", None) == TipoEvento.incendio for o in enviados)
+
+
+def test_inspector_ajusta_su_tamano_y_muestra_el_terreno(ventana):
+    ventana._alSeleccionarCasilla(5, 5)
+    inspector = ventana.inspector
+    assert inspector.height() > 60  # antes quedaba con la altura por defecto y no se veia el texto
+    assert inspector.lbl_especie.text().startswith("Tipo: ")
+    assert "código" not in inspector.lbl_especie.text()

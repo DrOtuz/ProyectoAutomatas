@@ -30,6 +30,16 @@ from simulador.contratos.comandos import (
     TipoEvento,
 )
 from simulador.contratos.errores import ErrorSimulador
+from simulador.contratos.instantanea import EstadoCasilla
+
+NOMBRES_TERRENO = {
+    EstadoCasilla.tierra: "Tierra",
+    EstadoCasilla.agua: "Agua",
+    EstadoCasilla.pasto: "Pasto",
+    EstadoCasilla.arbol: "Árbol",
+    EstadoCasilla.llamas: "En llamas",
+    EstadoCasilla.quemada: "Quemada",
+}
 
 
 class VentanaSimulacion(QMainWindow):
@@ -284,26 +294,30 @@ class VentanaSimulacion(QMainWindow):
             self._ejecutor.enviar(ProvocarEvento(TipoEvento.incendio, foco_x=x, foco_y=y))
             return
         instantanea = self._ejecutor.obtenerInstantanea()
-        criaturas = instantanea.criaturas
-        # Buscar criatura en esa coordenada
-        encontrada = None
-        for i in range(criaturas.shape[0]):
-            if int(criaturas[i, 0]) == x and int(criaturas[i, 1]) == y:
-                encontrada = criaturas[i]
-                break
+        if not (0 <= x < instantanea.terreno.shape[1] and 0 <= y < instantanea.terreno.shape[0]):
+            return
+        codigo = int(instantanea.terreno[y, x])
+        try:
+            terreno = NOMBRES_TERRENO[EstadoCasilla(codigo)]
+        except ValueError:
+            terreno = f"código {codigo}"
 
-        if encontrada is not None:
-            especie_id = int(encontrada[2])
-            nombre_esp = "Especie"
-            for esp in instantanea.especies:
-                if esp.especie_id == especie_id:
-                    nombre_esp = esp.nombre
-                    break
-            self.inspector.mostrarCriatura(especie_nombre=nombre_esp, edad=instantanea.tick)
-        else:
-            # Mostrar datos de casilla
-            tipo_codigo = int(instantanea.terreno[y, x])
-            self.inspector.mostrarCasilla(x, y, tipo=f"Tipo {tipo_codigo}")
+        criaturas = instantanea.criaturas
+        aqui = [int(fila[2]) for fila in criaturas if int(fila[0]) == x and int(fila[1]) == y]
+        if not aqui:
+            self.inspector.mostrarCasilla(x, y, tipo=terreno)
+            return
+
+        nombres = {e.especie_id: e for e in instantanea.especies}
+        detalles = [f"Casilla: {terreno} ({x}, {y})"]
+        info = nombres.get(aqui[0])
+        if info is not None:
+            detalles.append(f"Población de la especie: {info.poblacion}")
+        if len(aqui) > 1:
+            detalles.append(f"Hay {len(aqui)} criaturas en la casilla")
+        self.inspector.mostrarCriatura(
+            especie_nombre=info.nombre if info else "Especie", detalles=detalles
+        )
 
     def _onGuardar(self) -> None:
         if hasattr(self._ejecutor, "solicitarGuardado"):
