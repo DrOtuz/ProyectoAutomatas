@@ -15,8 +15,8 @@ MENSAJE_FALTAN_DEPENDENCIAS = (
 def main(argv: list[str] | None = None) -> int:
     """Abre la aplicación. Devuelve el código de salida del proceso."""
     try:
-        import PySide6  # noqa: F401
         import pyqtgraph  # noqa: F401
+        import PySide6  # noqa: F401
     except ImportError as error:
         print(MENSAJE_FALTAN_DEPENDENCIAS.format(faltante=error.name), file=sys.stderr)
         return 1
