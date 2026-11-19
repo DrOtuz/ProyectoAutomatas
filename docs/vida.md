@@ -3,26 +3,28 @@
 > **Fuente de verdad:** [Especificación](especificacion.md) (aprobada). Este documento no crea requisitos: reparte y aterriza los existentes. Todo lo que no está en la especificación aparece marcado como **(propuesta)** y se cierra en «Decisiones pendientes de este subgrupo».
 > **Fecha:** 2026-10-18 · **Subgrupos hermanos:** [Ecosistema](ecosistema.md) · [App](app.md) 
 
-## Estado actual del repositorio (2026-11-06)
+## Estado actual del repositorio (2026-11-18)
 
-El subgrupo App ya tiene código, pruebas y CI. **Ecosistema y Vida todavía no tienen código**: sus carpetas solo contienen un `__init__.py` vacío.
+El subgrupo **Vida** cuenta con implementación completa de su lógica interna en `src/simulador/vida/` y una batería de 11 suites de pruebas unitarias y de integración en `tests/vida/`.
 
 | Elemento | Estado |
 | --- | --- |
-| `docs/` | Los seis documentos del proyecto (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`) |
-| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y el `MotorFalso` con el que se prueba sin motor real |
-| `src/simulador/app/` | Almacenamiento en memoria y en SQLite, y el `Ejecutor` (hilo del motor) |
-| `src/simulador/configuracion/` | Cargador y validación, la sección de App y plantillas vacías para las secciones `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
-| `src/simulador/ecosistema/`, `vida/` | Solo `__init__.py` vacío |
-| Pruebas | `tests/app/` con las pruebas de los contratos, el almacenamiento, el `Ejecutor`, el `MotorFalso` y la configuración; `tests/vida/` y `tests/ecosistema/` solo tienen `__init__.py`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`. Las tres pruebas de Vida existentes (RF-37, RF-41 y RF-44) comprueban solo la forma de los contratos |
-| Integración continua | `.github/workflows/integracion_continua.yml` corre en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
-| `README.md` | Ramas `main`, `develop` y `feature/subgrupo-tarea`; ciclo de git; guía de instalación (`pip install -r requirements.txt` y `pip install -e .`); prueba de humo |
-| `requirements.txt` | Incluye ya `hypothesis` y `pytest-cov`, además de `numpy`, `pytest`, `ruff`, `import-linter`, `PySide6`, `pyqtgraph` y `pytest-qt` |
-| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, pytest sobre `tests/` con el marcador `requisito`, ruff con línea de 100 y el contrato de import-linter «El motor no importa la aplicacion» |
+| `docs/` | Documentación completa (`app.md`, `contratos.md`, `ecosistema.md`, `especificacion.md`, `pruebas-y-trazabilidad.md`, `vida.md`, `guia-de-calidad.md`) |
+| `src/simulador/contratos/` | Contratos en código: errores, comandos, avisos, instantánea, motor, almacenamiento, y `MotorFalso` |
+| `src/simulador/app/` | Almacenamiento (memoria y SQLite), rutas, ejecutor en segundo plano, registro de errores local, e interfaz gráfica PySide6 |
+| `src/simulador/configuracion/` | Cargador validado, sección de App, plantillas vacías para `ecosistema.py` y `vida.py`, y `por_defecto.toml` |
+| `src/simulador/vida/` | Módulos implementados: `tipos.py`, `config.py`, `puertos.py` (`MapaPuerto`), `criatura.py`, `especie.py`, `automata_criatura.py`, `percepcion.py`, `poblacion.py`, `estadisticas.py`, `historial.py`, `simulacion_vida.py`, y adaptadores falsos |
+| `src/simulador/ecosistema/` | Contratos (`Casilla`, `GestorEventos`) documentados en `docs/contratos.md`; código del motor celular en proceso de integración |
+| Pruebas | 11 suites en `tests/vida/` y 22 suites en `tests/app/`. Todas pasan limpiamente en la suite global de 468 pruebas |
+| Integración continua | `.github/workflows/integracion_continua.yml` en Windows (Python 3.11): `ruff check`, `lint-imports` y `pytest` |
+| Gobernanza | `.github/CODEOWNERS` activo |
+| `README.md` | Guía de inicio rápido, estándares y prueba de humo |
+| `requirements.txt` | PySide6, pyqtgraph, pytest, hypothesis, pytest-cov, import-linter, numpy, ruff |
+| `pyproject.toml` | Paquete `simulador`, Python ≥ 3.11, configuración de pytest, ruff y contrato de arquitectura |
 
-**Lo que este documento nombra y sigue siendo propuesta:** los módulos de `vida/`, las funciones `paso_06` a `paso_10`, la vista del mundo, la serialización, la inspección de criatura, el historial por especie y la paleta. En el código, lo que este documento llama `FakeEngine` e `InMemoryStorage` se llama `MotorFalso` y `AlmacenamientoMemoria`.
+**Módulos implementados por Vida:** todo el paquete `src/simulador/vida/` está funcional. Incluye el autómata de estados de criaturas, ciclo de vida de especies, reproducción con mutación, cálculo de metabolismo, percepción vectorizada en radio, gestión de población con orden determinista, recolección de estadísticas e historial para las gráficas de App, desacoplamiento con `MapaPuerto` y un simulador CLI autónomo para calibración.
 
-**Todavía no existen:** `.github/CODEOWNERS` y la corrida nocturna `nocturna.yml`.
+**Pendiente:** integración directa con el mapa celular de Ecosistema mediante el adaptador de `MapaPuerto`.
 
 ## 1. Propósito y alcance
 
@@ -235,22 +237,22 @@ Objetivo del sprint: dejar lista la base de **F2** para empezar a integrar en la
 
 ## Trazabilidad RF → módulo → prueba
 
-Los módulos son una **propuesta**. La columna «Prueba» lista los archivos que ya existen y, tras «por escribir:», los que faltan. Las pruebas existentes de estas filas están en `tests/app/` y comprueban los contratos, no la lógica de Vida, que todavía no está implementada (`src/simulador/vida/` solo tiene `__init__.py`). Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. Cada prueba lleva `@pytest.mark.requisito("RF-xx")`.
+Módulos implementados y suites de pruebas del subgrupo Vida. Las rutas de módulos son relativas a `src/simulador/` y las de pruebas empiezan en `tests/`. «Existe» indica que la funcionalidad y sus pruebas correspondientes están implementadas; «Parcial», que la lógica biológica está lista y probada contra `MapaFalso`, restando únicamente la conexión con el motor celular final de Ecosistema.
 
-| Requisito | Módulo (propuesto) | Prueba | Estado |
+| Requisito | Módulo | Prueba | Estado |
 | --- | --- | --- | --- |
-| RF-36 | `vida/automata.py, vida/muerte.py` | `tests/vida/test_huida_fuego.py` | Por escribir |
-| RF-37 | `vida/especies.py` | `tests/app/test_contratos_comandos.py`<br>por escribir: tests/vida/test_crear_especie.py | Parcial |
-| RF-38 | `vida/genes.py, vida/poblacion.py` | `tests/vida/test_genes_y_estado.py` | Por escribir |
-| RF-39 | `vida/automata.py` | `tests/vida/test_automata.py` | Por escribir |
-| RF-40 | `vida/reproduccion.py` | `tests/vida/test_reproduccion.py` | Por escribir |
-| RF-41 | `vida/reproduccion.py, vida/especies.py` | `tests/app/test_contratos_avisos.py`<br>por escribir: tests/vida/test_cupo.py | Parcial |
-| RF-42 | `vida/especies.py` | `tests/vida/test_agregar_criaturas.py` | Por escribir |
-| RF-43 | `vida/especies.py` | `tests/vida/test_eliminar_criaturas.py` | Por escribir |
-| RF-44 | `vida/especies.py` | `tests/app/test_contratos_avisos.py`<br>por escribir: tests/vida/test_extinguir.py | Parcial |
-| RF-45 | `vida/especies.py` | `tests/vida/test_eliminar_especie.py` | Por escribir |
-| RF-47 | `vida/muerte.py` | `tests/vida/test_muerte.py` | Por escribir |
-| RF-52 | `vida/especies.py` | `tests/vida/test_limite_especies.py` | Por escribir |
-| RF-53 | `vida/depredacion.py` | `tests/vida/test_depredacion.py` | Por escribir |
-| RF-54 | `vida/movimiento.py` | `tests/vida/test_ocupacion.py` | Por escribir |
-| RF-55 | `vida/especies.py, contratos/paleta.py` | `tests/vida/test_paleta.py` | Por escribir |
+| RF-36 | `vida/automata_criatura.py`<br>`vida/criatura.py` | `tests/vida/test_automata_criatura.py`<br>`tests/vida/test_criatura.py` | Existe |
+| RF-37 | `vida/especie.py`<br>`vida/poblacion.py` | `tests/app/test_contratos_comandos.py`<br>`tests/app/test_especies_interfaz.py`<br>`tests/vida/test_especie.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-38 | `vida/criatura.py`<br>`vida/automata_criatura.py`<br>`vida/estadisticas.py` | `tests/vida/test_criatura.py`<br>`tests/vida/test_automata_criatura.py`<br>`tests/vida/test_estadisticas.py` | Existe |
+| RF-39 | `vida/automata_criatura.py`<br>`vida/percepcion.py` | `tests/vida/test_automata_criatura.py`<br>`tests/vida/test_percepcion.py` | Existe |
+| RF-40 | `vida/criatura.py`<br>`vida/poblacion.py` | `tests/vida/test_criatura.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-41 | `vida/poblacion.py`<br>`vida/config.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_ventana_simulacion.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-42 | `vida/poblacion.py`<br>`vida/especie.py` | `tests/app/test_especies_interfaz.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-43 | `vida/poblacion.py` | `tests/app/test_especies_interfaz.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-44 | `vida/poblacion.py`<br>`vida/especie.py` | `tests/app/test_contratos_avisos.py`<br>`tests/app/test_especies_interfaz.py`<br>`tests/vida/test_especie.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-45 | `vida/poblacion.py`<br>`vida/especie.py` | `tests/app/test_especies_interfaz.py`<br>`tests/vida/test_especie.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-47 | `vida/criatura.py`<br>`vida/poblacion.py` | `tests/vida/test_criatura.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-52 | `vida/poblacion.py`<br>`vida/especie.py` | `tests/app/test_especies_interfaz.py`<br>`tests/vida/test_especie.py`<br>`tests/vida/test_poblacion.py` | Existe |
+| RF-53 | `vida/automata_criatura.py`<br>`vida/criatura.py` | `tests/vida/test_automata_criatura.py`<br>`tests/vida/test_criatura.py`<br>`tests/vida/test_percepcion.py` | Existe |
+| RF-54 | `vida/poblacion.py`<br>`vida/percepcion.py` | `tests/vida/test_poblacion.py`<br>`tests/vida/test_mapa_falso.py` | Existe |
+| RF-55 | `vida/especie.py`<br>`app/interfaz/estilos.py` | `tests/app/test_especies_interfaz.py`<br>`tests/vida/test_especie.py` | Existe |

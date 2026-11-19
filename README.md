@@ -21,11 +21,32 @@ Descripción: Simulador de evolución de criaturas en un ecosistema.
     - **Líder:**
     - **Integrantes:**
 
-## Sobre acuerdos entre subgrupos
+## Sobre acuerdos y documentación
 
-En la carpeta `docs` se encuentran los acuerdos técnicos y estándares del proyecto:
-- **`docs/contratos.md`:** define las funciones, métodos y atributos que cada subgrupo ofrece a los demás.
-- **`docs/guia-de-calidad.md`:** estándares de código, pruebas, arquitectura y flujo de Git para todo el equipo.
+En la carpeta `docs/` se encuentran la especificación, los acuerdos técnicos y los estándares del proyecto:
+- **`docs/especificacion.md`:** especificación general del sistema, glosario, decisiones de diseño (D-01 a D-42) y requisitos (RF y RNF).
+- **`docs/contratos.md`:** define formalmente las interfaces, funciones, métodos y atributos que cada subgrupo expone a los demás.
+- **`docs/guia-de-calidad.md`:** estándares de código, reglas de arquitectura, convenciones de nombres y flujo de Git para todo el equipo.
+- **`docs/pruebas-y-trazabilidad.md`:** metodología de pruebas, verificación de requisitos y matriz de trazabilidad.
+- **`docs/app.md`:** arquitectura, diseño de interfaz y trazabilidad del Subgrupo App.
+- **`docs/vida.md`:** diseño biológico, autómatas, genética y trazabilidad del Subgrupo Vida.
+- **`docs/ecosistema.md`:** autómata celular, clima, eventos y trazabilidad del Subgrupo Ecosistema.
+
+## Estructura del repositorio
+
+```text
+ProyectoAutomatas/
+├── .github/                 # Workflows de CI (GitHub Actions) y CODEOWNERS
+├── docs/                    # Especificación, contratos y guías de calidad
+├── scripts/                 # Scripts de verificación y trazabilidad
+├── src/simulador/
+│   ├── app/                 # Persistencia (SQLite), ejecutor, editor e interfaz PySide6
+│   ├── configuracion/       # Cargador y validación TOML de parámetros
+│   ├── contratos/           # Protocolos, errores, comandos, instantánea y motor falso
+│   ├── ecosistema/          # Autómata celular, mapa, clima y eventos
+│   └── vida/                # Criaturas, especies, autómata, percepción y población
+└── tests/                   # Batería de pruebas automatizadas (app y vida)
+```
 
 ## Sobre las ramas de desarrollo
 - **main**
@@ -150,17 +171,19 @@ Ejemplo: `feature/vida-reproduccion`.
 
 ### 9. Antes de subir tu trabajo: pruebas y revisión
 
-Con el entorno activo, ejecuta estos tres comandos y confirma que pasan:
+Con el entorno activo, ejecuta estos comandos y confirma que pasan:
 
 ```bash
 pytest
 ruff check .
 lint-imports
+python scripts/verificar_trazabilidad.py
 ```
 
-- `pytest` corre las pruebas. Cada prueba lleva la marca `@pytest.mark.requisito("RF-xx")` con el requisito que comprueba.
-- `ruff check .` revisa el estilo del código.
-- `lint-imports` comprueba que `ecosistema` y `vida` no importan `app` ni Qt.
+- `pytest` corre las pruebas automatizadas (468 pruebas en el repositorio).
+- `ruff check .` revisa el estilo y formato del código.
+- `lint-imports` comprueba la regla de arquitectura («El motor no importa la aplicación»).
+- `python scripts/verificar_trazabilidad.py` comprueba que cada marca `@pytest.mark.requisito` apunte a un requisito válido de `docs/especificacion.md`.
 
 ### Qué se repite y qué no
 
@@ -170,7 +193,7 @@ lint-imports
 | Cada vez que abres una terminal nueva | Paso 5 (activar el entorno) |
 | Cada vez que empiezas una tarea | Paso 8 |
 | Si alguien cambia `requirements.txt` | Repetir `pip install -r requirements.txt` |
-| Antes de cada pull request | Paso 9 (`pytest`, `ruff check`, `lint-imports`) |
+| Antes de cada pull request | Paso 9 (`pytest`, `ruff check`, `lint-imports`, `verificar_trazabilidad`) |
 
 ### Errores comunes
 

@@ -1,7 +1,7 @@
 # Guía de pruebas y trazabilidad
 
 > Explica en simple todo lo que los documentos de los subgrupos y la especificación dicen sobre pruebas y trazabilidad. No crea reglas nuevas: todo sale de `especificacion.md`, `app.md`, `ecosistema.md` y `vida.md`. Lo que es ejemplo ilustrativo está marcado como tal.
-> **Fecha:** 2026-10-18
+> **Fecha:** 2026-10-18 · **Actualizado:** 2026-11-18
 
 ## 1. La idea en una frase
 
@@ -28,17 +28,17 @@ Requisito (RF/RNF)  →  Módulo (archivo de código)  →  Prueba (archivo de t
 ### Cómo leer el Estado
 
 - **Por escribir:** todavía no hay ninguna prueba para ese requisito.
-- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito`. **No significa que cubra todo el criterio** (por ejemplo, una prueba de sequía que solo revise la temperatura). Hoy solo RF-50 está en «Existe»; los demás requisitos con pruebas están en «Parcial».
-- **Parcial:** hay una parte de las pruebas y falta otra (p. ej. RNF-02 cuando exista el benchmark sin criaturas pero falte el de 1000).
+- **Existe:** hay al menos una prueba con la marca `@pytest.mark.requisito` que comprueba el criterio de aceptación.
+- **Parcial:** hay una parte de las pruebas o cubre la interfaz/contratos y falta la integración con el motor real.
 
-Nota: versiones anteriores de las tablas marcaban varios requisitos como «Existe» por un kit de pruebas que no está en este repositorio. Hoy hay código y pruebas solo del subgrupo App (`tests/app/`); `ecosistema/` y `vida/` no tienen código, así que sus pruebas del motor real están «Por escribir».
+Nota: la suite actual cuenta con 468 pruebas automatizadas ejecutándose limpiamente con pytest. El script `scripts/verificar_trazabilidad.py` valida que cada marca de requisito apunte a un requisito válido de `docs/especificacion.md`.
 
 ## 3. Las dos tablas de trazabilidad
 
 1. **En la especificación (sección 9):** vista general por área (simulaciones, ventana, mapa, eventos, criaturas, persistencia, no funcionales). Dice qué tipo de prueba aplica a cada área.
 2. **En cada subgrupo (`app.md`, `ecosistema.md`, `vida.md`):** una fila por requisito con módulo, archivo de prueba y estado. Es la que se usa a diario.
 
-Reglas acordadas (decisión A-DP-07): la matriz se **regenera en la integración continua (CI)** y **cada subgrupo responde por sus propias filas**. Hoy hay pruebas con la marca `requisito` para 26 requisitos, todas en `tests/app/`: 19 de App, 4 de Ecosistema y 3 de Vida. Las siete de Ecosistema y Vida comprueban solo los contratos y el `MotorFalso`, no el motor real. El resto está «Por escribir».
+Reglas acordadas (decisión A-DP-07): la matriz se **valida en la integración continua (CI)** mediante `scripts/verificar_trazabilidad.py` y **cada subgrupo responde por sus propias filas**. Actualmente hay pruebas marcadas para 36 requisitos en el repositorio (cubriendo el flujo de App, persistencia, contratos, y modelos de Vida), y 468 pruebas en total ejecutándose en verde.
 
 ## 4. Tipos de prueba que se mencionan
 
