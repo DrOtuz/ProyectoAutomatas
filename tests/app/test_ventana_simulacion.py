@@ -233,3 +233,17 @@ def test_inspector_ajusta_su_tamano_y_muestra_el_terreno(ventana):
     assert inspector.height() > 60  # antes quedaba con la altura por defecto y no se veia el texto
     assert inspector.lbl_especie.text().startswith("Tipo: ")
     assert "código" not in inspector.lbl_especie.text()
+
+
+def test_error_de_evento_se_quita_solo_y_al_pulsar_otro_boton(ventana):
+    panel = ventana.panel_eventos
+    panel.mostrarError("Ya hay una sequía activa.")
+    assert not panel.lbl_error.isHidden()
+    assert panel._temporizador_error.isActive()
+
+    panel._temporizador_error.timeout.emit()  # pasan los 6 segundos
+    assert panel.lbl_error.isHidden()
+
+    panel.mostrarError("otro error")
+    panel.btn_lluvia.click()  # pulsar otro boton de eventos lo limpia
+    assert panel.lbl_error.isHidden()

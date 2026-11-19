@@ -54,6 +54,7 @@ class InspectorWidget(QFrame):
         # Especie
         self.lbl_especie = QLabel("Especie: Desconocida")
         self.lbl_especie.setStyleSheet("font-size: 12px; font-weight: 500; color: #333333;")
+        self.lbl_especie.setWordWrap(True)
         layout.addWidget(self.lbl_especie)
 
         # Métricas vitales
@@ -67,6 +68,7 @@ class InspectorWidget(QFrame):
 
         for lbl in (self.lbl_edad, self.lbl_saciedad, self.lbl_hidratacion, self.lbl_estado):
             lbl.setStyleSheet("font-size: 12px; color: #555555;")
+            lbl.setWordWrap(True)
             self.contenedor_metricas.addWidget(lbl)
 
         layout.addLayout(self.contenedor_metricas)
@@ -82,7 +84,12 @@ class InspectorWidget(QFrame):
         for etiqueta, texto in zip(etiquetas, lineas + [""] * len(etiquetas), strict=False):
             etiqueta.setText(texto)
             etiqueta.setVisible(bool(texto))
-        self.adjustSize()
+        # el layout recalcula su tamano de forma perezosa: se fuerza antes de medir,
+        # si no la tarjeta se queda con la altura anterior y recorta las filas nuevas
+        self.layout().invalidate()
+        self.layout().activate()
+        alto = self.layout().totalHeightForWidth(self.width())  # con texto que se parte en lineas
+        self.resize(self.width(), alto if alto > 0 else self.layout().sizeHint().height())
         self.move(10, 10)
         self.show()
         self.raise_()
