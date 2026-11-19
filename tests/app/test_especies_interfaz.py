@@ -153,3 +153,14 @@ def test_detalle_especie_graficas_acumulan_muestras(qtbot, especie_muestra):
     assert len(detalle._historial_ticks) == 2
     assert detalle._historial_poblacion == [50, 65]
     assert detalle._historial_genes["velocidad"] == [4.0, 4.5]
+
+
+def test_crear_especie_fijar_color_cambia_la_tarjeta(qtbot):
+    widget = CrearEspecieWidget()
+    qtbot.addWidget(widget)
+    assert widget.lbl_hex.text() == PALETA_ESPECIES[0]
+    widget.fijarColor(3)
+    assert widget.lbl_hex.text() == PALETA_ESPECIES[3]
+    assert "4 de 12" in widget.lbl_color_desc.text()
+    widget.fijarColor(15)  # da la vuelta a la paleta
+    assert widget.lbl_hex.text() == PALETA_ESPECIES[3]

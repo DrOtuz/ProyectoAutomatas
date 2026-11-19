@@ -152,7 +152,7 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             self._temporizador_error.timeout.connect(self.lbl_error.hide)
 
             self._lista.volverSimulacion.connect(self.hide)
-            self._lista.solicitarCrearEspecie.connect(lambda: self._pila.setCurrentWidget(self._crear))
+            self._lista.solicitarCrearEspecie.connect(self._irACrear)
             self._lista.abrirDetalleEspecie.connect(self._abrirDetalle)
             self._crear.volverLista.connect(lambda: self._pila.setCurrentWidget(self._lista))
             self._crear.crearEspecieSolicitado.connect(self._crearEspecie)
@@ -171,6 +171,16 @@ def ejecutar(argv: list[str] | None = None) -> int:  # pragma: no cover - necesi
             self.lbl_error.setText(texto)
             self.lbl_error.show()
             self._temporizador_error.start(6000)
+
+        def _irACrear(self) -> None:
+            # mismo criterio que el motor: el primer color de la paleta que no usa otra especie
+            especies = self._ejecutor.obtenerInstantanea().especies
+            usados = {e.color for e in especies}
+            libre = next((c for c in range(12) if c not in usados), None)
+            if libre is None:
+                libre = (max((e.especie_id for e in especies), default=0) + 1) % 12
+            self._crear.fijarColor(libre)
+            self._pila.setCurrentWidget(self._crear)
 
         def _crearEspecie(self, nombre: str, cantidad: int, dieta: str, genes) -> None:
             self._ejecutor.enviar(CrearEspecie(nombre, cantidad, dieta, genes))
