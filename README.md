@@ -1,165 +1,140 @@
-# ProyectoAutomatas
+# Simulador de ecosistema
 
-Descripción: Simulador de evolución de criaturas en un ecosistema.
+Aplicación de escritorio en Python que simula un ecosistema en un mapa de 100 × 100 casillas. El mapa funciona como un **autómata celular** (vegetación, fuego, clima y estaciones) y sobre él viven **criaturas** que son **autómatas de estados finitos**: buscan comida, huyen, se reproducen, mutan y evolucionan. Es el proyecto de la materia *Autómatas y Lenguajes Formales*.
+
+Puedes dibujar el mapa, crear especies (herbívoras, omnívoras o carnívoras), provocar sequías, lluvias e incendios, ver gráficas por especie y guardar la simulación para continuarla después.
 
 ---
 
-## Sobre subgrupos
-- **Subgrupo Ecosistema**
-    - **Responsabilidades:**
-    Desarrollo del ciclo de simulación, mapa, clima y eventos.
-    - **Líder:**
-    - **Integrantes:**
-- **Subgrupo Vida**
-    - **Responsabilidades:**
-    Desarrollo del comportamiento y estadisticas de especies y criaturas.
-    - **Líder:**
-    - **Integrantes:**
-- **Subgrupo App**
-    - **Responsabilidades:**
-    Persistencia de datos e interfaz de la app.
-    - **Líder:**
-    - **Integrantes:**
+## Cómo ejecutarlo
 
-## Sobre acuerdos entre subgrupos
+### Requisitos
 
-En la carpeta docs hay un documento llamado 'contratos.md' en el que se definirá qué funciones y atributos ofrece cada subgrupo a los demás.
+- **Python 3.11 o superior** ([descargar](https://www.python.org/downloads/); en Windows marca *Add python.exe to PATH*).
+- Conexión a internet **solo la primera vez**, para instalar las dependencias (NumPy, PySide6 y pyqtgraph).
 
-## Sobre las ramas de desarrollo
-- **main**
-    - **Proposito:**
-    versiones estables, lo que se entrega.
-- **develop**
-    - **Proposito:**
-    Donde se integra el trabajo de todos.
-- **ramas de trabajo**
-    - **Proposito:**
-    Una tarea concreta de una persona.
-    - **Nota:**
-    Los nombres de las ramas de trabajo siguen el patrón `feature/subgrupo-tarea`
+### La forma fácil
 
-## Ciclo de git diario
-1. Partir siempre desde develop actualizado
-- `git checkout develop`
-- `git pull`
+| Sistema | Qué hacer |
+|---|---|
+| **Windows** | Doble clic en `ejecutar.bat` |
+| **Mac / Linux** | En una terminal: `./ejecutar.sh` |
 
-2. Crear tu rama de trabajo
-- `git checkout -b feature/subgrupo-tarea`
+El script crea el entorno virtual `.venv` la primera vez, instala lo necesario y abre el simulador. Las siguientes veces solo lo abre.
 
-3. Programar, y guardar cambios en commits pequeños
-- `git add .`
-- `git commit -m "descripción"`
+### A mano
 
-4. Subir tu rama
-- `git push -u origin feature/subgrupo-tarea`
-
-5. Abrir un `pull request` hacia `develop`
-
-## Primeros pasos: clonar y configurar el proyecto
-
-Esta guía es para quien clona el repositorio por primera vez. Todos los comandos se ejecutan desde la **raíz del proyecto** (la carpeta `ProyectoAutomatas`).
-
-### Requisitos previos
-
-- **Git** instalado (`git --version`).
-- **Python 3.11 o superior** (`python --version`).
-- Haber **aceptado la invitación** al repositorio que GitHub envía por correo.
-
-### 1. Clonar el repositorio
-
-```bash
-git clone <url-del-repositorio>
-cd ProyectoAutomatas
-```
-
-La URL está en GitHub, en el botón verde **Code**.
-
-### 2. Cambiarse a `develop`
-
-Al clonar, Git deja el repositorio en `main`. El trabajo diario parte de `develop`:
-
-```bash
-git checkout develop
-git pull
-```
-
-### 3. Abrir el proyecto en VS Code
-
-Usa **File → Open Folder** y elige la carpeta raíz (`ProyectoAutomatas`), **no** una subcarpeta como `src`. Luego abre la terminal en **Terminal → New Terminal**.
-
-### 4. Crear el entorno virtual
+Desde la carpeta del proyecto:
 
 ```bash
 python -m venv .venv
-```
 
-### 5. Activar el entorno virtual
+# Windows (PowerShell):  .venv\Scripts\activate
+# Mac / Linux:           source .venv/bin/activate
 
-**Windows (PowerShell)**
-
-```powershell
-.venv\Scripts\activate
-```
-
-**Mac / Linux**
-
-```bash
-source .venv/bin/activate
-```
-
-La línea de la terminal debe empezar con `(.venv)`. Si no lo ves, el entorno no está activo.
-
-> **Windows:** si aparece el error de que *la ejecución de scripts está deshabilitada*, ejecuta este comando una sola vez y repite la activación:
->
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-> ```
-
-### 6. Instalar las dependencias y el proyecto
-
-Con el entorno activo:
-
-```bash
-pip install -r requirements.txt
 pip install -e .
+python -m simulador
 ```
 
-Escribe el punto final de `pip install -e .`, con un espacio antes: indica que se instala el proyecto de la carpeta actual.
+Si no activas el entorno, también puedes escribir `.venv\Scripts\python -m simulador` (Windows) o `.venv/bin/python -m simulador` (Mac / Linux).
 
-### 7. Prueba de humo
+> **Windows:** si PowerShell dice que *la ejecución de scripts está deshabilitada*, ejecuta una vez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` o usa `ejecutar.bat`.
 
-```bash
-python -c "import simulador.app, simulador.ecosistema, simulador.vida; print('ok')"
+### Dónde se guardan las simulaciones
+
+En un archivo SQLite llamado `biblioteca.db`:
+
+- Windows: `%LOCALAPPDATA%\Simulador\`
+- Otros sistemas: `~/AppData/Local/Simulador/`
+- O la carpeta que indiques en la variable de entorno `SIMULADOR_CARPETA_DATOS`.
+
+---
+
+## Cómo se usa
+
+1. **Menú principal → Nueva simulación.** Escribe un nombre y dibuja el mapa en el editor (agua y tierra, con pincel, deshacer y rehacer). Al confirmar, la vegetación se siembra sola, más densa cerca del agua.
+2. **Ventana de simulación.** Empieza en pausa. Pulsa **Reanudar**, ajusta la **velocidad** (1 a 30 ticks por segundo) y los **nutrientes** del suelo. La rueda del ratón hace zoom y arrastrar mueve el mapa; un clic en una casilla muestra su información.
+3. **Especies.** Desde el botón de especies puedes crear una (nombre, cantidad, dieta y, en modo avanzado, tamaño, velocidad y visión), agregar o quitar criaturas, extinguirla o eliminarla, y ver sus gráficas de población y promedios. Hay un máximo de 500 criaturas y 12 especies activas.
+4. **Eventos.** El panel lateral permite provocar **sequía** o **lluvia**, o un **incendio**: pulsa el botón y haz clic en el mapa donde quieres que empiece (Esc cancela). Cada evento activo se puede cancelar.
+5. **Guardar.** El botón *Guardar* escribe la simulación; además se guarda sola cada 1000 ticks, al pausar y al cerrar. Desde el menú principal se puede cargar, renombrar o eliminar.
+
+---
+
+## Cómo está organizado
+
+```
+ProyectoAutomatas/
+├── ejecutar.bat · ejecutar.sh     Abren el simulador (instalan lo necesario la primera vez)
+├── pyproject.toml                 Paquete, dependencias y configuración de pytest, ruff e import-linter
+├── requirements.txt               Instala el proyecto          (pip install -r requirements.txt)
+├── requirements-dev.txt           Instala además las herramientas de desarrollo
+├── src/simulador/
+│   ├── ecosistema/                Grupo A: mapa, reloj, eventos, fuego, vegetación, ciclo del tick
+│   ├── vida/                      Grupo B: criaturas, autómata de estados, población, evolución
+│   ├── app/                       Grupo C: ventanas, ejecutor en hilo, guardado SQLite, editor de mapa
+│   ├── contratos/                 Interfaces comunes entre grupos (Motor, comandos, instantánea…)
+│   ├── integracion/               Une A + B + C en un solo motor (SimuladorEcosistema)
+│   └── configuracion/             Parámetros de cada grupo (valores y rangos validados)
+├── tests/                         Pruebas automáticas, una carpeta por grupo
+├── docs/                          Documentación (ver abajo)
+├── scripts/                       Herramientas del repositorio (verificación de trazabilidad)
+└── .github/                       Integración continua, revisores y plantilla de Pull Request
 ```
 
-Si imprime `ok`, el entorno quedó listo.
+La idea central: **cada grupo trabaja contra contratos, no contra el código de los demás**. Vida no conoce el mapa de Ecosistema (solo un puerto `MapaPuerto`) y la aplicación no conoce el motor real (solo la clase abstracta `Motor`). Detalles en [`docs/arquitectura.md`](docs/arquitectura.md).
 
-### 8. Antes de programar: crear tu rama
+## Documentación
 
-Nadie trabaja directamente en `develop` ni en `main`. Cada tarea va en su propia rama:
-
-```bash
-git checkout develop
-git pull
-git checkout -b feature/<subgrupo>-<tarea>
-```
-
-Ejemplo: `feature/vida-reproduccion`.
-
-### Qué se repite y qué no
-
-| Cuándo | Qué hacer |
+| Documento | Para qué sirve |
 |---|---|
-| Una sola vez | Pasos 1, 4, 6 y 7 |
-| Cada vez que abres una terminal nueva | Paso 5 (activar el entorno) |
-| Cada vez que empiezas una tarea | Paso 8 |
-| Si alguien cambia `requirements.txt` | Repetir `pip install -r requirements.txt` |
+| [`docs/arquitectura.md`](docs/arquitectura.md) | Visión general: orden del tick, hilos, guardado, determinismo |
+| [`docs/ecosistema.md`](docs/ecosistema.md) | Grupo A: mapa, fuego (autómata celular), clima, eventos, vegetación |
+| [`docs/vida.md`](docs/vida.md) | Grupo B: autómata de la criatura, energía, reproducción, evolución |
+| [`docs/app.md`](docs/app.md) | Grupo C: interfaz, ejecutor, guardado, configuración |
+| [`docs/contratos.md`](docs/contratos.md) | Interfaces que cruzan fronteras entre grupos |
+| [`docs/especificacion.md`](docs/especificacion.md) | Requisitos funcionales y no funcionales vigentes (RF / RNF) |
+| [`docs/pruebas-y-trazabilidad.md`](docs/pruebas-y-trazabilidad.md) | Cómo se prueba y cómo se vincula cada prueba con un requisito |
+| [`docs/guia-de-calidad.md`](docs/guia-de-calidad.md) | Estándares de código, revisión y Git |
 
-### Errores comunes
+---
 
-| Error | Causa probable | Solución |
+## Para quien desarrolla
+
+```bash
+pip install -r requirements-dev.txt     # proyecto + pytest, pytest-qt, ruff, import-linter
+
+pytest                                  # pruebas (las de interfaz corren sin abrir ventanas)
+ruff check .                            # estilo
+lint-imports                            # reglas de arquitectura: el motor no importa la interfaz
+python scripts/verificar_trazabilidad.py    # cada marca @pytest.mark.requisito apunta a un requisito real
+```
+
+La integración continua (`.github/workflows/integracion_continua.yml`) corre estos mismos comandos en Windows con Python 3.11 en cada push y Pull Request hacia `develop` y `main`.
+
+### Ramas
+
+- `main`: versiones estables, lo que se entrega.
+- `develop`: donde se integra el trabajo de todos.
+- `feature/<subgrupo>-<tarea>`: una tarea concreta, creada siempre desde `develop` actualizado y fusionada por Pull Request con *Create a merge commit*.
+
+Más reglas (nombres, commits, contratos, revisión) en [`docs/guia-de-calidad.md`](docs/guia-de-calidad.md).
+
+### Subgrupos y responsables
+
+| Subgrupo | Responsabilidad | Líder |
 |---|---|---|
-| `ModuleNotFoundError` | El entorno no está activo, la terminal no está en la raíz, o se omitió `pip install -e .` | Verifica que veas `(.venv)`, que estés en la raíz, y repite el paso 6 |
-| `python` no se reconoce | Python no está instalado o no está en el PATH | Reinstala Python marcando *Add to PATH*; en Windows prueba con `py` |
-| Versión de Python anterior a 3.11 | Python desactualizado | Instala una versión más reciente |
-| `pip install -e` falla | Falta el punto final o no estás en la raíz | Ejecuta `pip install -e .` desde la raíz |
+| **Ecosistema** | Ciclo del tick, mapa, clima, eventos, fuego y vegetación | @MrMishaelysium |
+| **Vida** | Criaturas, autómata de decisión, población y evolución | @DrOtuz |
+| **App** | Interfaz, ejecutor, guardado, configuración, CI | @Juan-var-camp |
+
+---
+
+## Problemas frecuentes
+
+| Problema | Causa probable | Solución |
+|---|---|---|
+| `No module named 'simulador'` | El proyecto no está instalado en el entorno activo | Ejecuta `pip install -e .` desde la raíz con el entorno activo, o usa `ejecutar.bat` / `ejecutar.sh` |
+| `python` no se reconoce | Python no está instalado o no está en el PATH | Instálalo marcando *Add to PATH*; en Windows prueba `py -3` |
+| Error de versión de Python | Tienes una versión anterior a 3.11 | Instala Python 3.11 o superior |
+| `Faltan dependencias del simulador` | PySide6 o pyqtgraph no están instalados | `pip install -e .` |
+| La ventana se ve lenta con muchas criaturas | La simulación es más pesada que el refresco | Baja la velocidad en el deslizador o reduce la población |

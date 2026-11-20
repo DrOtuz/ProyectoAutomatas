@@ -1,0 +1,41 @@
+name: Integracion continua
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas en Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Instalar el proyecto y las herramientas de desarrollo
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Estilo (ruff)
+        run: ruff check .
+
+      - name: Reglas de importacion
+        run: lint-imports
+
+      - name: Pruebas
+        run: pytest
+
+      - name: Trazabilidad de requisitos
+        run: python scripts/verificar_trazabilidad.py
